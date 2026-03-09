@@ -1750,7 +1750,7 @@ function renderNourrir() {
         <div class="form-group">
           <label class="field-label">Type</label>
           <select id="f-nourrir-type">
-            <option>Candy</option><option>Sirop 50</option><option>Sirop 100</option><option>Protéine</option>
+            ${getListes().type_nourriture.map(v=>`<option>${v}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -1802,7 +1802,7 @@ function renderSoigner() {
         <div class="form-group">
           <label class="field-label">Traitement</label>
           <select id="f-soigner-type">
-            <option>Varroxal Sub</option><option>Varroxal Deg</option><option>Varromed</option><option>Apivar</option><option>Plancher</option>
+            ${getListes().type_traitement.map(v=>`<option>${v}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -1837,14 +1837,7 @@ async function saveSoigner() {
 }
 
 // --- ACTIONS ---
-const ACTIONS_LIST = ['Remérage','Division','Essaimage','Orpheline','Transhumance',
-  'Achat essaim hiverné','Essaim récupéré (du rucher)','Implentation reine','Marquage de la reine',
-  'Visite avec BG','Cadre à mâles','Cadre à mâles (Ajout)','Cadre à mâles (Retrait)',
-  '1 cadre','2 cadres','3 cadres','Ajout 1 cadre couvain (division)','Ajout 3 cadres couvain (division)',
-  'Ajout 1 cadre bouffe (division)','Retrait 1 cadre couvain (divison)',
-  'Retrait 3 cadres couvain (Division)','Retrait 1 cadre bouffe (division)',
-  'Retraiit 1 cadre (serrage)','1 cadre (desserrage)',
-  'Mise en place portes anti-frelons','Retrait de la porte'];
+// ACTIONS_LIST remplacée par getListes().type_action
 
 function renderActionsScreen() {
   const el = document.getElementById('content-actions');
@@ -1864,7 +1857,7 @@ function renderActionsScreen() {
       <div class="form-row full">
         <div class="form-group">
           <label class="field-label">Action</label>
-          <select id="f-actions-action">${ACTIONS_LIST.map(a => `<option>${a}</option>`).join('')}</select>
+          <select id="f-actions-action">${getListes().type_action.map(a=>`<option>${a}</option>`).join('')}</select>
         </div>
       </div>
       <div class="form-row full">
@@ -2126,13 +2119,13 @@ function renderStock() {
         <div class="form-group">
           <label class="field-label">Variété</label>
           <select id="f-stock-variete">
-            <option>Toutes fleurs</option><option>Châtaigner</option><option>Bonbons</option><option>Hydromel</option>
+            ${getListes().variete_miel.map(v=>`<option>${v}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
           <label class="field-label">Type pot</label>
           <select id="f-stock-pot">
-            <option>Verre</option><option>Sachet 170 g</option><option>75 Cl Verre</option>
+            ${getListes().type_pot.map(v=>`<option>${v}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -2262,7 +2255,7 @@ async function saveAchat() {
 // ============================================================
 // PARAMÉTRAGE
 // ============================================================
-let _paramTab = 'supabase';
+let _paramTab = 'listes';
 
 function renderParametrage() {
   const el = document.getElementById('content-parametrage');
@@ -2270,12 +2263,12 @@ function renderParametrage() {
   const cfg = getConfig();
 
   const TABS = [
-    { id: 'supabase',     label: '☁️ Supabase'    },
+    { id: 'listes',       label: '📋 Listes'       },
     { id: 'rucher',       label: '🏡 Rucher'       },
     { id: 'ruches-mgmt',  label: '🐝 Ruches'       },
     { id: 'apiculteur',   label: '👤 Apiculteur'   },
-    { id: 'listes',       label: '📋 Listes'       },
     { id: 'data',         label: '💾 Données'      },
+    { id: 'supabase',     label: '☁️ Supabase'    },
   ];
 
   el.innerHTML = `
@@ -2422,27 +2415,75 @@ function renderParametrage() {
   `;
 }
 
+// Listes stockées dans localStorage pour personnalisation
+const LISTES_DEFAULT = {
+  type_traitement: ['Varroxal Sub','Varroxal Deg','Varromed','Apivar','Plancher'],
+  type_nourriture: ['Candy','Sirop 50','Sirop 100','Protéine'],
+  type_action:     ['Remérage','Division','Essaimage','Orpheline','Transhumance','Achat essaim hiverné','Essaim récupéré (du rucher)','Implentation reine','Marquage de la reine','Visite avec BG','Cadre à mâles','Cadre à mâles (Ajout)','Cadre à mâles (Retrait)','1 cadre','2 cadres','3 cadres','Ajout 1 cadre couvain (division)','Ajout 3 cadres couvain (division)','Ajout 1 cadre bouffe (division)','Retrait 1 cadre couvain (divison)','Retrait 3 cadres couvain (Division)','Retrait 1 cadre bouffe (division)','Retraiit 1 cadre (serrage)','1 cadre (desserrage)','Mise en place portes anti-frelons','Retrait de la porte'],
+  variete_miel:    ['Toutes fleurs','Châtaigner','Bonbons','Hydromel'],
+  type_pot:        ['Verre','Sachet 170 g','75 Cl Verre'],
+};
+const LISTES_KEY = 'ruches_listes';
+
+function getListes() {
+  try { return JSON.parse(localStorage.getItem(LISTES_KEY)) || {...LISTES_DEFAULT}; } catch { return {...LISTES_DEFAULT}; }
+}
+function saveListes(listes) { localStorage.setItem(LISTES_KEY, JSON.stringify(listes)); }
+
 function renderParamListes() {
-  const LISTES = [
-    { label: 'Types de traitement', key: 'type_traitement', values: ['Varroxal Sub','Varroxal Deg','Varromed','Apivar','Plancher'] },
-    { label: 'Types de nourriture', key: 'type_nourriture', values: ['Candy','Sirop 50','Sirop 100','Protéine'] },
-    { label: 'Actions rucher',      key: 'type_action',     values: ['Remérage','Division','Essaimage','Inspection','Hausse posée','Hausse retirée'] },
-    { label: 'Variétés de miel',    key: 'variete_miel',    values: ['Toutes fleurs','Châtaigner','Bonbons','Hydromel'] },
-    { label: 'Types de pots',       key: 'type_pot',        values: ['Verre','Sachet 170 g','75 Cl Verre'] },
-  ];
-  return LISTES.map(l => `
+  const listes = getListes();
+  const LABELS = {
+    type_traitement: 'Types de traitement',
+    type_nourriture: 'Types de nourriture',
+    type_action:     'Actions rucher',
+    variete_miel:    'Variétés de miel',
+    type_pot:        'Types de pots',
+  };
+  return Object.entries(LABELS).map(([key, label]) => {
+    const values = listes[key] || [];
+    return `
     <div class="param-card">
-      <div class="param-card-title">${l.label}</div>
-      <div style="display:flex;flex-wrap:wrap;margin-bottom:8px">
-        ${l.values.map(v => `<span class="liste-tag">${v}</span>`).join('')}
+      <div class="param-card-title">${label} <span style="font-weight:400;color:var(--text-muted)">(${values.length})</span></div>
+      <div style="margin-bottom:10px">
+        ${values.map((v, i) => `
+          <div class="param-row">
+            <span class="param-row-label">${v}</span>
+            <button onclick="removeListeVal('${key}',${i})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0 4px" title="Supprimer">×</button>
+          </div>
+        `).join('')}
       </div>
       <div style="display:flex;gap:8px">
-        <input type="text" id="new-${l.key}" placeholder="Nouvelle valeur…" style="flex:1;font-size:12px">
-        <button class="btn btn-secondary" style="font-size:12px;padding:6px 10px" onclick="addListeVal('${l.key}')">+</button>
+        <input type="text" id="new-${key}" placeholder="Ajouter une valeur…" style="flex:1;font-size:12px"
+          onkeydown="if(event.key==='Enter')addListeVal('${key}')">
+        <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="addListeVal('${key}')">+</button>
       </div>
-      <div style="font-size:10px;color:var(--text-muted);margin-top:6px">Les listes sont gérées localement (enums Supabase)</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
+
+function addListeVal(key) {
+  const input = document.getElementById(`new-${key}`);
+  const val = input?.value.trim();
+  if (!val) return;
+  const listes = getListes();
+  if (!listes[key]) listes[key] = [];
+  if (listes[key].includes(val)) { toast('Valeur déjà présente', 'err'); return; }
+  listes[key].push(val);
+  saveListes(listes);
+  _paramTab = 'listes';
+  renderParametrage();
+  toast(`"${val}" ajouté`, 'ok');
+}
+
+function removeListeVal(key, idx) {
+  const listes = getListes();
+  if (!listes[key]) return;
+  const val = listes[key][idx];
+  listes[key].splice(idx, 1);
+  saveListes(listes);
+  _paramTab = 'listes';
+  renderParametrage();
+  toast(`"${val}" supprimé`, 'ok');
 }
 
 function switchParamTab(tab) {
