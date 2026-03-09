@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a0e">
+<title>Principauté de Cordemais</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   VARIABLES & RESET
+   ============================================================ */
+:root {
+  --bg:          #141409;
+  --bg2:         #1c1c0f;
+  --bg3:         #232315;
+  --card:        #1e1e10;
+  --card-hover:  #272718;
+  --border:      rgba(180,150,60,.18);
+  --border-soft: rgba(180,150,60,.08);
+  --gold:        #c8a84b;
+  --gold-light:  #e2c97e;
+  --gold-dim:    #8a7235;
+  --cream:       #f0e8d0;
+  --text:        #d4c89a;
+  --text-dim:    #7a7058;
+  --text-muted:  #4a4838;
+  --green:       #5a8a3a;
+  --green-light: #7ab85a;
+  --red:         #a03030;
+  --nav-h:       64px;
+  --header-h:    52px;
+  --radius:      14px;
+  --radius-sm:   8px;
+  --shadow:      0 4px 24px rgba(0,0,0,.5);
+  --transition:  .2s cubic-bezier(.4,0,.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%; width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Jost', sans-serif;
+  font-size: 14px;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   TEXTURE DE FOND
+   ============================================================ */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(200,168,75,.06) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+#app {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  z-index: 1;
+}
+
+/* HEADER */
+#header {
+  height: var(--header-h);
+  background: rgba(20,20,9,.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 16px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+#header-back {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer;
+  color: var(--gold); font-size: 18px;
+  border-radius: 50%;
+  transition: background var(--transition);
+  flex-shrink: 0;
+  visibility: hidden;
+}
+#header-back:hover { background: rgba(200,168,75,.1); }
+#header-back.visible { visibility: visible; }
+
+#header-titles {
+  flex: 1; padding: 0 8px;
+  overflow: hidden;
+}
+#header-subtitle {
+  font-size: 9px; font-weight: 500; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--gold-dim);
+  line-height: 1;
+}
+#header-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 600;
+  color: var(--gold-light);
+  line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+#header-actions {
+  display: flex; gap: 4px; align-items: center;
+  flex-shrink: 0;
+}
+
+.hdr-btn {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer;
+  color: var(--text-dim); font-size: 16px;
+  border-radius: 50%;
+  transition: all var(--transition);
+}
+.hdr-btn:hover { background: rgba(200,168,75,.1); color: var(--gold); }
+.hdr-btn.sync-active { color: var(--gold); animation: spin 1.5s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* CONTENT */
+#content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+/* NAV BAS */
+#nav {
+  height: var(--nav-h);
+  background: rgba(20,20,9,.95);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: stretch;
+  flex-shrink: 0;
+  position: relative; z-index: 10;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+  border: none; background: none; cursor: pointer;
+  color: var(--text-muted);
+  transition: color var(--transition);
+  position: relative;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute; top: 0; left: 20%; right: 20%;
+  height: 2px; background: var(--gold);
+  border-radius: 0 0 2px 2px;
+  opacity: 0; transition: opacity var(--transition);
+}
+
+.nav-item.active { color: var(--gold); }
+.nav-item.active::before { opacity: 1; }
+
+.nav-item:hover { color: var(--gold-dim); }
+
+.nav-icon { font-size: 20px; line-height: 1; }
+.nav-label {
+  font-size: 9px; font-weight: 500; letter-spacing: .06em;
+  text-transform: uppercase; text-align: center; line-height: 1.2;
+}
+
+/* ============================================================
+   ÉCRANS
+   ============================================================ */
+.screen { display: none; height: 100%; }
+.screen.active { display: block; }
+
+/* ============================================================
+   MENU PRINCIPAL
+   ============================================================ */
+#screen-menu {
+  padding: 16px;
+}
+
+.menu-section {
+  margin-bottom: 24px;
+}
+
+.menu-section-title {
+  font-size: 9px; font-weight: 600; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 10px; padding-left: 2px;
+}
+
+/* Desktop : grille 4 colonnes / Mobile : 2 colonnes */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}
+
+.menu-tile {
+  background: var(--card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  aspect-ratio: 1;
+}
+
+/* Desktop : hauteur fixe plutôt qu'aspect-ratio carré */
+@media (min-width: 601px) {
+  .menu-tile { aspect-ratio: unset; height: 90px; }
+}
+
+.menu-tile::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(200,168,75,.08) 0%, transparent 70%);
+  opacity: 0; transition: opacity var(--transition);
+}
+
+.menu-tile:hover { border-color: var(--border); background: var(--card-hover); }
+.menu-tile:hover::before { opacity: 1; }
+.menu-tile:active { transform: scale(.97); }
+
+.menu-tile-icon {
+  font-size: 28px; line-height: 1; margin-bottom: 8px;
+  filter: drop-shadow(0 0 8px rgba(200,168,75,.2));
+}
+
+@media (min-width: 601px) {
+  .menu-tile-icon { font-size: 22px; margin-bottom: 5px; }
+}
+
+.menu-tile-label {
+  font-size: 11px; font-weight: 500; letter-spacing: .04em;
+  color: var(--text); text-align: center;
+}
+
+@media (min-width: 601px) {
+  .menu-tile-label { font-size: 11px; }
+}
+
+.menu-tile-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: var(--gold); color: var(--bg);
+  font-size: 9px; font-weight: 700;
+  border-radius: 10px; padding: 1px 6px;
+  line-height: 14px;
+}
+
+/* ============================================================
+   ÉCRAN RUCHES
+   ============================================================ */
+#screen-ruches {
+  padding: 12px;
+}
+
+.ruche-card {
+  background: var(--card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ruche-card:hover { border-color: var(--border); background: var(--card-hover); }
+.ruche-card:active { transform: scale(.99); }
+
+.ruche-id {
+  width: 36px; height: 36px;
+  background: rgba(200,168,75,.1);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; font-weight: 600; color: var(--gold);
+  flex-shrink: 0;
+}
+
+.ruche-info { flex: 1; min-width: 0; }
+.ruche-nom {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px; font-weight: 600; color: var(--cream);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ruche-meta {
+  font-size: 11px; color: var(--text-dim);
+  display: flex; gap: 10px; margin-top: 2px;
+}
+
+.ruche-poids {
+  text-align: right; flex-shrink: 0;
+}
+.ruche-poids-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 600; color: var(--gold-light);
+  line-height: 1;
+}
+.ruche-poids-unit {
+  font-size: 10px; color: var(--text-dim);
+}
+
+.ruche-status {
+  width: 8px; height: 8px;
+  border-radius: 50%; flex-shrink: 0;
+}
+.ruche-status.ok    { background: var(--green-light); box-shadow: 0 0 6px var(--green); }
+.ruche-status.warn  { background: #f0a500; box-shadow: 0 0 6px #f0a500; }
+.ruche-status.inact { background: var(--text-muted); }
+
+/* ============================================================
+   ÉCRAN TABLEAU DE BORD
+   ============================================================ */
+#screen-dashboard {
+  padding: 12px;
+}
+
+.dash-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-bottom: 8px;
+}
+
+@media (max-width: 400px) {
+  .dash-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+.dash-stat {
+  background: var(--card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.dash-stat-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 600;
+  color: var(--gold-light); line-height: 1;
+}
+.dash-stat-lbl {
+  font-size: 10px; color: var(--text-dim);
+  margin-top: 3px; text-transform: uppercase; letter-spacing: .08em;
+}
+
+.dash-chart-card {
+  background: var(--card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+}
+
+.dash-chart-title {
+  font-size: 10px; font-weight: 500; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.sparkline-row {
+  display: flex; align-items: flex-end; gap: 3px;
+  height: 48px;
+}
+
+.spark-bar {
+  flex: 1; border-radius: 3px 3px 0 0;
+  background: linear-gradient(to top, var(--gold-dim), var(--gold));
+  opacity: .7; transition: opacity var(--transition);
+  min-height: 4px;
+}
+.spark-bar:hover { opacity: 1; }
+
+/* ============================================================
+   FORMULAIRES (SAISIE)
+   ============================================================ */
+.form-screen {
+  padding: 12px;
+}
+
+.form-card {
+  background: var(--card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.form-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px; font-weight: 600; color: var(--cream);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px; margin-bottom: 10px;
+}
+.form-row.full { grid-template-columns: 1fr; }
+
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+
+label.field-label {
+  font-size: 10px; font-weight: 500; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-dim);
+}
+
+input, select, textarea {
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--cream);
+  font-family: 'Jost', sans-serif;
+  font-size: 14px;
+  padding: 9px 12px;
+  width: 100%;
+  transition: border var(--transition);
+  -webkit-appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: rgba(200,168,75,.05);
+}
+
+select option { background: var(--bg2); color: var(--cream); }
+
+/* ============================================================
+   BOUTONS
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 7px; border: none; cursor: pointer;
+  font-family: 'Jost', sans-serif; font-weight: 500;
+  letter-spacing: .06em;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Desktop compact / Mobile touch-friendly */
+.btn-primary {
+  background: linear-gradient(135deg, #b8941f, #c8a84b, #d4b55a);
+  color: #1a1409;
+  font-size: 13px;
+  padding: 9px 20px;
+}
+
+.btn-secondary {
+  background: rgba(200,168,75,.08);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  font-size: 13px;
+  padding: 8px 18px;
+}
+
+.btn-danger {
+  background: rgba(160,48,48,.15);
+  border: 1px solid rgba(160,48,48,.3);
+  color: #e07070;
+  font-size: 13px;
+  padding: 8px 18px;
+}
+
+/* Sur mobile : boutons plus hauts pour le touch */
+@media (max-width: 600px) {
+  .btn-primary  { padding: 12px 24px; font-size: 14px; }
+  .btn-secondary { padding: 11px 20px; font-size: 14px; }
+  .btn-danger   { padding: 11px 20px; font-size: 14px; }
+}
+
+.btn-primary:hover  { filter: brightness(1.1); }
+.btn-secondary:hover { background: rgba(200,168,75,.14); }
+.btn-danger:hover   { background: rgba(160,48,48,.25); }
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+.btn-full { width: 100%; }
+
+/* ============================================================
+   TAGS / BADGES
+   ============================================================ */
+.tag {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; font-weight: 500; letter-spacing: .06em;
+}
+.tag-gold   { background: rgba(200,168,75,.15); color: var(--gold); border: 1px solid rgba(200,168,75,.25); }
+.tag-green  { background: rgba(90,138,58,.15);  color: var(--green-light); border: 1px solid rgba(90,138,58,.3); }
+.tag-red    { background: rgba(160,48,48,.15);  color: #e07070; border: 1px solid rgba(160,48,48,.3); }
+.tag-muted  { background: rgba(255,255,255,.05); color: var(--text-dim); border: 1px solid var(--border-soft); }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toast-container {
+  position: fixed; bottom: calc(var(--nav-h) + 12px); left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; pointer-events: none;
+}
+.toast {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 20px; padding: 8px 16px;
+  font-size: 12px; color: var(--text);
+  box-shadow: var(--shadow);
+  animation: toastIn .25s ease;
+  white-space: nowrap;
+}
+.toast.ok  { border-color: rgba(90,138,58,.5); color: var(--green-light); }
+.toast.err { border-color: rgba(160,48,48,.5); color: #e07070; }
+@keyframes toastIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+.loading {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; gap: 16px; color: var(--text-dim);
+}
+.hex-loader {
+  width: 40px; height: 40px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ============================================================
+   DIVIDER
+   ============================================================ */
+.divider {
+  height: 1px; background: var(--border-soft);
+  margin: 12px 0;
+}
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.empty {
+  text-align: center; padding: 48px 24px;
+  color: var(--text-muted);
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .5; }
+.empty-text { font-size: 13px; }
+
+/* ============================================================
+   MODAL / SHEET
+   ============================================================ */
+.sheet-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s;
+}
+.sheet-overlay.open { opacity: 1; pointer-events: all; }
+
+.sheet {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 20px 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+  z-index: 101;
+  transform: translateY(100%);
+  transition: transform .35s cubic-bezier(.4,0,.2,1);
+  max-height: 85vh; overflow-y: auto;
+}
+.sheet.open { transform: translateY(0); }
+
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+
+.sheet-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 600; color: var(--cream);
+  margin-bottom: 16px;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <header id="header">
+    <button id="header-back" onclick="goBack()">←</button>
+    <div id="header-titles">
+      <div id="header-subtitle">Principauté de Cordemais</div>
+      <div id="header-title">Menu principal</div>
+    </div>
+    <div id="header-actions">
+      <button class="hdr-btn" id="btn-sync" onclick="syncData()" title="Synchroniser">⟳</button>
+      <button class="hdr-btn" onclick="showSettings()" title="Paramètres">⚙</button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- ===== MENU PRINCIPAL ===== -->
+    <div id="screen-menu" class="screen active">
+      <div id="content-menu"></div>
+    </div>
+
+    <!-- ===== RUCHES ===== -->
+    <div id="screen-ruches" class="screen">
+      <div id="content-ruches">
+        <div class="loading"><div class="hex-loader"></div><span>Chargement…</span></div>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="screen-dashboard" class="screen">
+      <div id="content-dashboard">
+        <div class="loading"><div class="hex-loader"></div><span>Chargement…</span></div>
+      </div>
+    </div>
+
+    <!-- ===== RÉCOLTE ===== -->
+    <div id="screen-recolte" class="screen">
+      <div id="content-recolte" class="form-screen"></div>
+    </div>
+
+    <!-- ===== STOCK/VENTE ===== -->
+    <div id="screen-stock" class="screen">
+      <div id="content-stock" class="form-screen"></div>
+    </div>
+
+    <!-- ===== SAISIE PESÉE ===== -->
+    <div id="screen-pesee" class="screen">
+      <div id="content-pesee" class="form-screen"></div>
+    </div>
+
+    <!-- ===== SAISIE NOURRISSEMENT ===== -->
+    <div id="screen-nourrir" class="screen">
+      <div id="content-nourrir" class="form-screen"></div>
+    </div>
+
+    <!-- ===== SAISIE TRAITEMENT ===== -->
+    <div id="screen-soigner" class="screen">
+      <div id="content-soigner" class="form-screen"></div>
+    </div>
+
+    <!-- ===== ACTIONS ===== -->
+    <div id="screen-actions" class="screen">
+      <div id="content-actions" class="form-screen"></div>
+    </div>
+
+    <!-- ===== VARROA ===== -->
+    <div id="screen-varroa" class="screen">
+      <div id="content-varroa" class="form-screen"></div>
+    </div>
+
+    <!-- ===== FRELONS ===== -->
+    <div id="screen-frelons" class="screen">
+      <div id="content-frelons" class="form-screen"></div>
+    </div>
+
+    <!-- ===== ACHATS ===== -->
+    <div id="screen-achats" class="screen">
+      <div id="content-achats" class="form-screen"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- NAV BAS -->
+  <nav id="nav">
+    <button class="nav-item active" data-nav="menu" onclick="navigate('menu')">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Menu</span>
+    </button>
+    <button class="nav-item" data-nav="ruches" onclick="navigate('ruches')">
+      <span class="nav-icon">🐝</span>
+      <span class="nav-label">Ruches</span>
+    </button>
+    <button class="nav-item" data-nav="dashboard" onclick="navigate('dashboard')">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Tableau<br>de bord</span>
+    </button>
+    <button class="nav-item" data-nav="recolte" onclick="navigate('recolte')">
+      <span class="nav-icon">🍯</span>
+      <span class="nav-label">Récolte<br>Année N</span>
+    </button>
+    <button class="nav-item" data-nav="stock" onclick="navigate('stock')">
+      <span class="nav-icon">🛒</span>
+      <span class="nav-label">Stock<br>Vente</span>
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- SHEET CONFIG SUPABASE -->
+<div class="sheet-overlay" id="settings-overlay" onclick="closeSettings()"></div>
+<div class="sheet" id="settings-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">⚙️ Configuration</div>
+  <div class="form-group" style="margin-bottom:12px">
+    <label class="field-label">URL Supabase</label>
+    <input type="text" id="cfg-url" placeholder="https://xxxx.supabase.co">
+  </div>
+  <div class="form-group" style="margin-bottom:16px">
+    <label class="field-label">Clé API (anon)</label>
+    <input type="password" id="cfg-key" placeholder="eyJ…">
+  </div>
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-primary" onclick="saveSettings()">Enregistrer</button>
+    <button class="btn btn-secondary" onclick="testSupabase()">Tester</button>
+  </div>
+  <div id="cfg-status" style="margin-top:10px;font-size:12px;color:var(--text-dim)"></div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG SUPABASE
+// ============================================================
+const CONFIG_KEY = 'ruches_config';
+
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'); } catch { return {}; }
+}
+function saveSettings() {
+  const cfg = { url: document.getElementById('cfg-url').value.trim().replace(/\/$/, ''), key: document.getElementById('cfg-key').value.trim() };
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+  closeSettings();
+  toast('Configuration enregistrée', 'ok');
+  loadData();
+}
+function showSettings() {
+  const cfg = getConfig();
+  document.getElementById('cfg-url').value = cfg.url || '';
+  document.getElementById('cfg-key').value = cfg.key || '';
+  document.getElementById('cfg-status').textContent = '';
+  document.getElementById('settings-overlay').classList.add('open');
+  document.getElementById('settings-sheet').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+  document.getElementById('settings-sheet').classList.remove('open');
+}
+async function testSupabase() {
+  const url = document.getElementById('cfg-url').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('cfg-key').value.trim();
+  const el = document.getElementById('cfg-status');
+  el.textContent = '⏳ Test en cours…'; el.style.color = 'var(--text-dim)';
+  try {
+    const r = await fetch(`${url}/rest/v1/ruches?limit=1`, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+    if (r.ok) { el.textContent = '✅ Connexion réussie !'; el.style.color = 'var(--green-light)'; }
+    else { el.textContent = `❌ Erreur ${r.status}`; el.style.color = '#e07070'; }
+  } catch(e) { el.textContent = `❌ ${e.message}`; el.style.color = '#e07070'; }
+}
+
+// ============================================================
+// DONNÉES (cache localStorage + Supabase)
+// ============================================================
+let DB = {
+  ruches: [], colonies: [], pesees: [], nourrissements: [],
+  traitements: [], actions: [], recoltes: [], conditionnements: [],
+  achats: [], pieges_frelons: [], comptages_varroa: []
+};
+
+const CACHE_KEY = 'ruches_cache';
+const CACHE_TS  = 'ruches_cache_ts';
+
+function saveCache() {
+  localStorage.setItem(CACHE_KEY, JSON.stringify(DB));
+  localStorage.setItem(CACHE_TS, Date.now());
+}
+
+function loadCache() {
+  try {
+    const d = JSON.parse(localStorage.getItem(CACHE_KEY));
+    if (d) { Object.assign(DB, d); return true; }
+  } catch {}
+  return false;
+}
+
+async function fetchTable(url, key, table) {
+  const r = await fetch(`${url}/rest/v1/${table}?select=*&order=created_at.desc`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Accept-Profile': 'public' }
+  });
+  if (!r.ok) throw new Error(`${table}: ${r.status}`);
+  return r.json();
+}
+
+async function loadData(force = false) {
+  // Charger le cache d'abord
+  if (loadCache()) renderAll();
+
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) {
+    if (!localStorage.getItem(CACHE_KEY)) showSettings();
+    return;
+  }
+
+  // Ne pas re-fetch si fraîche (< 5 min) sauf si force
+  const ts = parseInt(localStorage.getItem(CACHE_TS) || '0');
+  if (!force && Date.now() - ts < 5 * 60 * 1000) return;
+
+  const btn = document.getElementById('btn-sync');
+  btn.classList.add('sync-active');
+
+  try {
+    const tables = ['ruches','colonies','pesees','nourrissements','traitements','actions','recoltes','conditionnements','achats','pieges_frelons','comptages_varroa'];
+    const results = await Promise.all(tables.map(t => fetchTable(cfg.url, cfg.key, t)));
+    tables.forEach((t, i) => DB[t] = results[i]);
+    saveCache();
+    renderAll();
+    toast('Données synchronisées', 'ok');
+  } catch(e) {
+    toast(`Sync échouée: ${e.message}`, 'err');
+  } finally {
+    btn.classList.remove('sync-active');
+  }
+}
+
+async function syncData() { loadData(true); }
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+let navStack = ['menu'];
+
+function navigate(screen, title, pushToStack = true) {
+  // Masquer tous les écrans
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(`screen-${screen}`);
+  if (el) el.classList.add('active');
+
+  // Mettre à jour le titre
+  const titles = {
+    menu: 'Menu principal', ruches: 'Mes ruches', dashboard: 'Tableau de bord',
+    recolte: 'Récolte Année N', stock: 'Stock & Vente',
+    pesee: 'Saisie pesée', nourrir: 'Nourrissement', soigner: 'Traitement',
+    actions: 'Actions rucher', varroa: 'Comptage Varroa',
+    frelons: 'Pièges frelons', achats: 'Achats'
+  };
+  document.getElementById('header-title').textContent = title || titles[screen] || screen;
+
+  // Bouton retour
+  const isRoot = ['menu','ruches','dashboard','recolte','stock'].includes(screen);
+  document.getElementById('header-back').classList.toggle('visible', !isRoot);
+
+  // Nav active
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.querySelector(`[data-nav="${screen}"]`);
+  if (navEl) navEl.classList.add('active');
+
+  // Stack
+  if (pushToStack) { if (navStack[navStack.length-1] !== screen) navStack.push(screen); }
+
+  // Scroller en haut
+  document.getElementById('content').scrollTop = 0;
+
+  // Rendre l'écran si nécessaire
+  renderScreen(screen);
+}
+
+function goBack() {
+  if (navStack.length > 1) { navStack.pop(); navigate(navStack[navStack.length-1], null, false); }
+}
+
+function renderAll() {
+  renderMenu();
+  if (document.getElementById('screen-ruches').classList.contains('active')) renderRuches();
+  if (document.getElementById('screen-dashboard').classList.contains('active')) renderDashboard();
+}
+
+function renderScreen(screen) {
+  if (screen === 'menu')      renderMenu();
+  if (screen === 'ruches')    renderRuches();
+  if (screen === 'dashboard') renderDashboard();
+  if (screen === 'recolte')   renderRecolte();
+  if (screen === 'stock')     renderStock();
+  if (screen === 'pesee')     renderPesee();
+  if (screen === 'nourrir')   renderNourrir();
+  if (screen === 'soigner')   renderSoigner();
+  if (screen === 'actions')   renderActionsScreen();
+  if (screen === 'varroa')    renderVarroa();
+  if (screen === 'frelons')   renderFrelons();
+  if (screen === 'achats')    renderAchats();
+}
+
+// ============================================================
+// MENU PRINCIPAL
+// ============================================================
+const MENU_SECTIONS = [
+  {
+    title: 'Actions rucher',
+    items: [
+      { id: 'pesee',   icon: '⚖️',  label: 'Peser',    screen: 'pesee'   },
+      { id: 'nourrir', icon: '🍽️',  label: 'Nourrir',  screen: 'nourrir' },
+      { id: 'soigner', icon: '💊',  label: 'Soigner',  screen: 'soigner' },
+      { id: 'actions', icon: '🔧',  label: 'Actions',  screen: 'actions' },
+    ]
+  },
+  {
+    title: 'Suivi & Contrôle',
+    items: [
+      { id: 'varroa',  icon: '🔬',  label: 'Varroa',   screen: 'varroa'  },
+      { id: 'frelons', icon: '🪲',  label: 'Frelons',  screen: 'frelons' },
+      { id: 'achats',  icon: '🛍️',  label: 'Achats',   screen: 'achats'  },
+    ]
+  }
+];
+
+function renderMenu() {
+  const el = document.getElementById('content-menu');
+  el.innerHTML = MENU_SECTIONS.map(section => `
+    <div class="menu-section">
+      <div class="menu-section-title">${section.title}</div>
+      <div class="menu-grid">
+        ${section.items.map(item => `
+          <button class="menu-tile" onclick="navigate('${item.screen}')">
+            <div class="menu-tile-icon">${item.icon}</div>
+            <div class="menu-tile-label">${item.label}</div>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// RUCHES
+// ============================================================
+function colonieActive(rucheId) {
+  return DB.colonies.find(c => c.ruche_id === rucheId && !c.date_fin);
+}
+
+function dernierePesee(rucheId) {
+  const pesees = DB.pesees.filter(p => p.ruche_id === rucheId).sort((a,b) => new Date(b.semaine) - new Date(a.semaine));
+  return pesees[0];
+}
+
+function calculerPesee(pesee) {
+  if (!pesee) return null;
+  const demi = parseFloat(pesee.demi_pesee);
+  return isNaN(demi) ? null : (demi * 2).toFixed(1);
+}
+
+function renderRuches() {
+  const el = document.getElementById('content-ruches');
+  if (!DB.ruches.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🐝</div><div class="empty-text">Aucune ruche trouvée</div></div>';
+    return;
+  }
+  const actives = DB.ruches.filter(r => r.actif !== false);
+  el.innerHTML = actives.map(r => {
+    const col = colonieActive(r.id);
+    const pesee = dernierePesee(r.id);
+    const poids = pesee ? calculerPesee(pesee) : null;
+    const hasColonie = !!col;
+    return `
+      <div class="ruche-card" onclick="navigate('ruches', '${r.nom}')">
+        <div class="ruche-id">${r.id}</div>
+        <div class="ruche-info">
+          <div class="ruche-nom">${r.nom}</div>
+          <div class="ruche-meta">
+            <span>${r.type_ruche || '—'}</span>
+            ${col ? `<span class="tag tag-green">${col.nom || 'Colonie active'}</span>` : '<span class="tag tag-muted">Sans colonie</span>'}
+          </div>
+        </div>
+        ${poids ? `<div class="ruche-poids"><div class="ruche-poids-val">${poids}</div><div class="ruche-poids-unit">kg</div></div>` : ''}
+        <div class="ruche-status ${hasColonie ? 'ok' : 'inact'}"></div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const el = document.getElementById('content-dashboard');
+  const nbRuches  = DB.ruches.filter(r => r.actif !== false).length;
+  const nbColonies = DB.colonies.filter(c => !c.date_fin).length;
+  const totalMiel = DB.recoltes.reduce((s,r) => s + (parseFloat(r.poids_miel) || 0), 0).toFixed(1);
+
+  // Stock actuel
+  const stock = DB.conditionnements.reduce((s,c) => s + (parseInt(c.quantite) || 0), 0);
+
+  // Dernières pesées par ruche (moyenne)
+  const poidsMoyens = DB.ruches.filter(r => r.actif !== false).map(r => {
+    const p = dernierePesee(r.id);
+    return p ? parseFloat(p.demi_pesee) * 2 : null;
+  }).filter(Boolean);
+  const poidsMoyen = poidsMoyens.length ? (poidsMoyens.reduce((a,b) => a+b, 0) / poidsMoyens.length).toFixed(1) : '—';
+
+  // Sparkline pesées des 8 dernières semaines (toutes ruches, moyenne)
+  const semaines = [...new Set(DB.pesees.map(p => p.semaine))].sort().slice(-8);
+  const sparkData = semaines.map(s => {
+    const vals = DB.pesees.filter(p => p.semaine === s && p.demi_pesee).map(p => parseFloat(p.demi_pesee) * 2);
+    return vals.length ? vals.reduce((a,b) => a+b,0) / vals.length : 0;
+  });
+  const maxSpark = Math.max(...sparkData, 1);
+
+  el.innerHTML = `
+    <div class="dash-row">
+      <div class="dash-stat"><div class="dash-stat-val">${nbRuches}</div><div class="dash-stat-lbl">Ruches actives</div></div>
+      <div class="dash-stat"><div class="dash-stat-val">${nbColonies}</div><div class="dash-stat-lbl">Colonies</div></div>
+      <div class="dash-stat"><div class="dash-stat-val">${poidsMoyen}<span style="font-size:14px;color:var(--text-dim)"> kg</span></div><div class="dash-stat-lbl">Poids moyen</div></div>
+    </div>
+    <div class="dash-row">
+      <div class="dash-stat"><div class="dash-stat-val">${totalMiel}<span style="font-size:14px;color:var(--text-dim)"> kg</span></div><div class="dash-stat-lbl">Récolté total</div></div>
+      <div class="dash-stat"><div class="dash-stat-val">${stock}</div><div class="dash-stat-lbl">Pots en stock</div></div>
+      <div class="dash-stat"><div class="dash-stat-val">${DB.traitements.length}</div><div class="dash-stat-lbl">Traitements</div></div>
+    </div>
+    ${sparkData.length ? `
+    <div class="dash-chart-card">
+      <div class="dash-chart-title">Poids moyen ruches — 8 dernières semaines</div>
+      <div class="sparkline-row">
+        ${sparkData.map((v,i) => `<div class="spark-bar" style="height:${Math.max(4, Math.round((v/maxSpark)*48))}px" title="${semaines[i]}: ${v.toFixed(1)} kg"></div>`).join('')}
+      </div>
+    </div>` : ''}
+    <div class="dash-chart-card">
+      <div class="dash-chart-title">Activité récente</div>
+      ${DB.actions.slice(0,5).map(a => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-soft)">
+          <span style="font-size:12px;color:var(--text)">${a.action}</span>
+          <span style="font-size:11px;color:var(--text-dim)">${a.ruche_id} · ${fmtDate(a.semaine)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ============================================================
+// FORMULAIRES DE SAISIE
+// ============================================================
+function rucheOptions() {
+  return DB.ruches.filter(r => r.actif !== false)
+    .map(r => `<option value="${r.id}">${r.id} — ${r.nom}</option>`).join('');
+}
+
+function colonieOptions(rucheId = null) {
+  const cols = rucheId
+    ? DB.colonies.filter(c => c.ruche_id === rucheId && !c.date_fin)
+    : DB.colonies.filter(c => !c.date_fin);
+  return cols.map(c => `<option value="${c.id}">${c.nom || c.id}</option>`).join('');
+}
+
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+
+// --- PESÉE ---
+function renderPesee() {
+  const el = document.getElementById('content-pesee');
+  el.innerHTML = `
+    <div class="form-card">
+      <div class="form-title">⚖️ Nouvelle pesée</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Ruche</label>
+          <select id="f-pesee-ruche" onchange="updateColonieSelect('pesee')">${rucheOptions()}</select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Date</label>
+          <input type="date" id="f-pesee-date" value="${todayISO()}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Demi-pesée (kg)</label>
+          <input type="number" id="f-pesee-demi" placeholder="ex: 12.5" step="0.1" min="0">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Nb cadres</label>
+          <input type="number" id="f-pesee-cadres" placeholder="ex: 8" min="1" max="12">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Nb hausses</label>
+          <input type="number" id="f-pesee-hausse" placeholder="0" min="0" max="5" value="0">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Colonie</label>
+          <select id="f-pesee-colonie">${colonieOptions()}</select>
+        </div>
+      </div>
+      <div id="f-pesee-calcul" style="background:rgba(200,168,75,.06);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;display:none">
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Calculs</div>
+        <div style="display:flex;gap:16px">
+          <span style="font-size:13px;color:var(--text)">Pesée totale : <strong id="calc-pesee" style="color:var(--gold-light)">—</strong></span>
+          <span style="font-size:13px;color:var(--text)">Ratio : <strong id="calc-ratio" style="color:var(--gold-light)">—</strong></span>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="savePesee()">💾 Enregistrer</button>
+    </div>
+  `;
+  // Calcul temps réel
+  ['f-pesee-demi','f-pesee-cadres','f-pesee-hausse'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateCalcPesee);
+  });
+}
+
+function updateCalcPesee() {
+  const demi   = parseFloat(document.getElementById('f-pesee-demi')?.value) || 0;
+  const cadres = parseFloat(document.getElementById('f-pesee-cadres')?.value) || 0;
+  const hausse = parseInt(document.getElementById('f-pesee-hausse')?.value) || 0;
+  const calcEl = document.getElementById('f-pesee-calcul');
+  if (demi > 0) {
+    const pesee = (demi * 2).toFixed(2);
+    const ratio = cadres > 0 ? (demi * 2 / cadres).toFixed(2) : '—';
+    document.getElementById('calc-pesee').textContent = pesee + ' kg';
+    document.getElementById('calc-ratio').textContent = ratio;
+    calcEl.style.display = 'block';
+  } else {
+    calcEl.style.display = 'none';
+  }
+}
+
+function updateColonieSelect(form) {
+  const rucheId = document.getElementById(`f-${form}-ruche`)?.value;
+  const sel = document.getElementById(`f-${form}-colonie`);
+  if (sel) sel.innerHTML = colonieOptions(rucheId);
+}
+
+async function savePesee() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
+  const ruche_id   = document.getElementById('f-pesee-ruche')?.value;
+  const colonie_id = document.getElementById('f-pesee-colonie')?.value || null;
+  const semaine    = document.getElementById('f-pesee-date')?.value;
+  const demi_pesee = parseFloat(document.getElementById('f-pesee-demi')?.value);
+  const nb_cadres  = parseInt(document.getElementById('f-pesee-cadres')?.value) || null;
+  const nb_hausse  = parseInt(document.getElementById('f-pesee-hausse')?.value) || 0;
+  if (!ruche_id || !semaine || isNaN(demi_pesee)) { toast('Remplissez les champs obligatoires', 'err'); return; }
+
+  const id = genId();
+  const pesee = demi_pesee * 2;
+  const ratio = nb_cadres ? +(pesee / nb_cadres).toFixed(4) : null;
+  const record = { id, ruche_id, colonie_id, semaine, demi_pesee, pesee, nb_cadres, nb_hausse, ratio };
+
+  try {
+    const r = await fetch(`${cfg.url}/rest/v1/pesees`, {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(record)
+    });
+    if (r.ok || r.status === 201) {
+      DB.pesees.unshift(record); saveCache();
+      toast('Pesée enregistrée ✓', 'ok');
+      renderPesee();
+    } else {
+      const e = await r.json();
+      toast(`Erreur: ${e.message}`, 'err');
+    }
+  } catch(e) { toast(`Erreur: ${e.message}`, 'err'); }
+}
+
+// --- NOURRISSEMENT ---
+function renderNourrir() {
+  const el = document.getElementById('content-nourrir');
+  el.innerHTML = `
+    <div class="form-card">
+      <div class="form-title">🍽️ Nourrissement</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Ruche</label>
+          <select id="f-nourrir-ruche" onchange="updateColonieSelect('nourrir')">${rucheOptions()}</select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Date</label>
+          <input type="date" id="f-nourrir-date" value="${todayISO()}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Type</label>
+          <select id="f-nourrir-type">
+            <option>Candy</option><option>Sirop 50</option><option>Sirop 100</option><option>Protéine</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Quantité (kg/L)</label>
+          <input type="number" id="f-nourrir-qte" placeholder="ex: 1.5" step="0.1" min="0">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label class="field-label">Colonie</label>
+          <select id="f-nourrir-colonie">${colonieOptions()}</select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveNourrir()">💾 Enregistrer</button>
+    </div>
+  `;
+}
+
+async function saveNourrir() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
+  const ruche_id      = document.getElementById('f-nourrir-ruche')?.value;
+  const colonie_id    = document.getElementById('f-nourrir-colonie')?.value || null;
+  const semaine       = document.getElementById('f-nourrir-date')?.value;
+  const type_nourriture = document.getElementById('f-nourrir-type')?.value;
+  const quantite      = parseFloat(document.getElementById('f-nourrir-qte')?.value);
+  if (!ruche_id || !semaine || !type_nourriture) { toast('Remplissez les champs obligatoires', 'err'); return; }
+  const record = { id: genId(), ruche_id, colonie_id, semaine, type_nourriture, quantite: isNaN(quantite) ? null : quantite };
+  await saveRecord('nourrissements', record, 'Nourrissement enregistré ✓');
+}
+
+// --- TRAITEMENT ---
+function renderSoigner() {
+  const el = document.getElementById('content-soigner');
+  el.innerHTML = `
+    <div class="form-card">
+      <div class="form-title">💊 Traitement</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Ruche</label>
+          <select id="f-soigner-ruche" onchange="updateColonieSelect('soigner')">${rucheOptions()}</select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Date début</label>
+          <input type="date" id="f-soigner-date" value="${todayISO()}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Traitement</label>
+          <select id="f-soigner-type">
+            <option>Varroxal Sub</option><option>Varroxal Deg</option><option>Varromed</option><option>Apivar</option><option>Plancher</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Date fin</label>
+          <input type="date" id="f-soigner-fin">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label class="field-label">Colonie</label>
+          <select id="f-soigner-colonie">${colonieOptions()}</select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveSoigner()">💾 Enregistrer</button>
+    </div>
+  `;
+}
+
+async function saveSoigner() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
+  const record = {
+    id: genId(),
+    ruche_id:        document.getElementById('f-soigner-ruche')?.value,
+    colonie_id:      document.getElementById('f-soigner-colonie')?.value || null,
+    semaine:         document.getElementById('f-soigner-date')?.value,
+    type_traitement: document.getElementById('f-soigner-type')?.value,
+    date_fin:        document.getElementById('f-soigner-fin')?.value || null
+  };
+  if (!record.ruche_id || !record.semaine) { toast('Remplissez les champs obligatoires', 'err'); return; }
+  await saveRecord('traitements', record, 'Traitement enregistré ✓');
+}
+
+// --- ACTIONS ---
+const ACTIONS_LIST = ['Remérage','Division','Essaimage','Orpheline','Transhumance',
+  'Achat essaim hiverné','Essaim récupéré (du rucher)','Implentation reine','Marquage de la reine',
+  'Visite avec BG','Cadre à mâles','Cadre à mâles (Ajout)','Cadre à mâles (Retrait)',
+  '1 cadre','2 cadres','3 cadres','Ajout 1 cadre couvain (division)','Ajout 3 cadres couvain (division)',
+  'Ajout 1 cadre bouffe (division)','Retrait 1 cadre couvain (divison)',
+  'Retrait 3 cadres couvain (Division)','Retrait 1 cadre bouffe (division)',
+  'Retraiit 1 cadre (serrage)','1 cadre (desserrage)',
+  'Mise en place portes anti-frelons','Retrait de la porte'];
+
+function renderActionsScreen() {
+  const el = document.getElementById('content-actions');
+  el.innerHTML = `
+    <div class="form-card">
+      <div class="form-title">🔧 Action rucher</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Ruche</label>
+          <select id="f-actions-ruche" onchange="updateColonieSelect('actions')">${rucheOptions()}</select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Date</label>
+          <input type="date" id="f-actions-date" value="${todayISO()}">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label class="field-label">Action</label>
+          <select id="f-actions-action">${ACTIONS_LIST.map(a => `<option>${a}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label class="field-label">Colonie</label>
+          <select id="f-actions-colonie">${colonieOptions()}</select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveAction()">💾 Enregistrer</button>
+    </div>
+    <div class="form-card">
+      <div class="form-title" style="margin-bottom:10px">Dernières actions</div>
+      ${DB.actions.slice(0,8).map(a => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-soft)">
+          <div>
+            <div style="font-size:13px;color:var(--text)">${a.action}</div>
+            <div style="font-size:11px;color:var(--text-dim)">${a.ruche_id}</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-dim);text-align:right">${fmtDate(a.semaine)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function saveAction() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
+  const record = {
+    id: genId(),
+    ruche_id:   document.getElementById('f-actions-ruche')?.value,
+    colonie_id: document.getElementById('f-actions-colonie')?.value || null,
+    semaine:    document.getElementById('f-actions-date')?.value,
+    action:     document.getElementById('f-actions-action')?.value
+  };
+  if (!record.ruche_id || !record.semaine) { toast('Remplissez les champs obligatoires', 'err'); return; }
+  await saveRecord('actions', record, 'Action enregistrée ✓');
+}
+
+// --- VARROA ---
+function renderVarroa() {
+  const el = document.getElementById('content-varroa');
+  el.innerHTML = `
+    <div class="form-card">
+      <div class="form-title">🔬 Comptage Varroa</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Ruche</label>
+          <select id="f-varroa-ruche">${rucheOptions()}</select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Date</label>
+          <input type="date" id="f-varroa-date" value="${todayISO()}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Méthode</label>
+          <select id="f-varroa-methode">
+            <option>Langes</option><option>Co2/50 g</option><option>Couvain de mâles (10 + 10 cellules)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Phase</label>
+          <select id="f-varroa-phase">
+            <option>J</option><option>J+7</option><option>J+10</option><option>J+20</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Nb varroas</label>
+          <input type="number" id="f-varroa-nb" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Poids abeilles (g)</label>
+          <input type="number" id="f-varroa-poids" placeholder="ex: 50" step="0.1">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveVarroa()">💾 Enregistrer</button>
+    </div>
+  `;
+}
+
+async function saveVarroa() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
+  const record = {
+    id: genId(),
+    ruche_id:       document.getElementById('f-varroa-ruche')?.value,
+    date_comptage:  document.getElementById('f-varroa-date')?.value,
+    methode:        document.getElementById('f-varroa-methode')?.value,
+    phase:          document.getElementById('f-varroa-phase')?.value,
+    nb_varroas:     parseInt(document.getElementById('f-varroa-nb')?.value) || 0,
+    poids_abeilles: parseFloat(document.getElementById('f-varroa-poids')?.value) || null
+  };
+  if (!record.ruche_id || !record.date_comptage) { toast('Remplissez les champs obligatoires', 'err'); return; }
+  await saveRecord('comptages_varroa', record, 'Comptage enregistré ✓');
+}
+
+// --- FRELONS ---
+function renderFrelons() {
+  const el = document.getElementById('content-frelons');
+  el.innerHTML = `
+    <div class="form-card">
+      <div class="form-title">🪲 Piège frelon</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Date</label>
+          <input type="date" id="f-frelons-date" value="${todayISO()}">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Piège</label>
+          <select id="f-frelons-piege">
+            <option>Petit</option><option>Grand</option><option>VetoPharma</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Appât</label>
+          <select id="f-frelons-appat">
+            <option>Cocktail</option><option>Appat</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Vespa Velutina 🟡</label>
+          <input type="number" id="f-frelons-vel" placeholder="0" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Vespa Crabro ⚫</label>
+          <input type="number" id="f-frelons-cra" placeholder="0" min="0" value="0">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveFrelons()">💾 Enregistrer</button>
+    </div>
+  `;
+}
+
+async function saveFrelons() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
+  const record = {
+    id: genId(),
+    date:           document.getElementById('f-frelons-date')?.value,
+    type_piege:     document.getElementById('f-frelons-piege')?.value,
+    appat:          document.getElementById('f-frelons-appat')?.value,
+    vespa_velutina: parseInt(document.getElementById('f-frelons-vel')?.value) || 0,
+    vespa_crabro:   parseInt(document.getElementById('f-frelons-cra')?.value) || 0
+  };
+  await saveRecord('pieges_frelons', record, 'Relevé frelon enregistré ✓');
+}
+
+// --- RÉCOLTE ---
+function renderRecolte() {
+  const el = document.getElementById('content-recolte');
+  const annee = new Date().getFullYear();
+  const recolteAnnee = DB.recoltes.filter(r => r.semaine && r.semaine.startsWith(annee));
+  const totalAnnee = recolteAnnee.reduce((s,r) => s + (parseFloat(r.poids_miel)||0), 0).toFixed(1);
+  el.innerHTML = `
+    <div class="form-card">
+      <div class="form-title">🍯 Récolte ${annee}</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px">
+        <span style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--gold-light)">${totalAnnee}</span>
+        <span style="color:var(--text-dim);font-size:14px">kg récoltés cette année</span>
+      </div>
+      <div style="margin-bottom:16px">
+        ${recolteAnnee.map(r => `
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-soft)">
+            <span style="font-size:13px;color:var(--text)">${r.ruche_id}</span>
+            <span style="font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--gold-light)">${r.poids_miel} kg</span>
+            <span style="font-size:11px;color:var(--text-dim)">${fmtDate(r.semaine)}</span>
+          </div>
+        `).join('') || '<div class="empty"><div class="empty-icon">🍯</div><div class="empty-text">Aucune récolte cette année</div></div>'}
+      </div>
+    </div>
+    <div class="form-card">
+      <div class="form-title">Nouvelle récolte</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Ruche</label>
+          <select id="f-recolte-ruche" onchange="updateColonieSelect('recolte')">${rucheOptions()}</select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Date</label>
+          <input type="date" id="f-recolte-date" value="${todayISO()}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Poids miel (kg)</label>
+          <input type="number" id="f-recolte-poids" placeholder="ex: 14.5" step="0.1" min="0">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Colonie</label>
+          <select id="f-recolte-colonie">${colonieOptions()}</select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveRecolte()">💾 Enregistrer</button>
+    </div>
+  `;
+}
+
+async function saveRecolte() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
+  const record = {
+    id: genId(),
+    ruche_id:   document.getElementById('f-recolte-ruche')?.value,
+    colonie_id: document.getElementById('f-recolte-colonie')?.value || null,
+    semaine:    document.getElementById('f-recolte-date')?.value,
+    poids_miel: parseFloat(document.getElementById('f-recolte-poids')?.value)
+  };
+  if (!record.ruche_id || !record.semaine || isNaN(record.poids_miel)) { toast('Remplissez les champs obligatoires', 'err'); return; }
+  await saveRecord('recoltes', record, 'Récolte enregistrée ✓');
+  renderRecolte();
+}
+
+// --- STOCK/VENTE ---
+function renderStock() {
+  const el = document.getElementById('content-stock');
+  // Calculer le stock actuel par variété
+  const stock = {};
+  DB.conditionnements.forEach(c => {
+    const key = `${c.variete || '?'}|${c.type_pot || '?'}|${c.contenance_ml || '?'}`;
+    if (!stock[key]) stock[key] = { variete: c.variete, type_pot: c.type_pot, contenance: c.contenance_ml, qte: 0 };
+    stock[key].qte += parseInt(c.quantite) || 0;
+  });
+  const stockLines = Object.values(stock).filter(s => s.qte > 0);
+
+  el.innerHTML = `
+    <div class="form-card">
+      <div class="form-title">📦 Stock actuel</div>
+      ${stockLines.length ? stockLines.map(s => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft)">
+          <div>
+            <div style="font-size:13px;color:var(--text)">${s.variete} — ${s.type_pot}</div>
+            <div style="font-size:11px;color:var(--text-dim)">${s.contenance} ml</div>
+          </div>
+          <span style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold-light)">${s.qte} <span style="font-size:12px;color:var(--text-dim)">pots</span></span>
+        </div>
+      `).join('') : '<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Stock vide</div></div>'}
+    </div>
+    <div class="form-card">
+      <div class="form-title">Entrée / Sortie</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Date</label>
+          <input type="date" id="f-stock-date" value="${todayISO()}">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Lot</label>
+          <input type="text" id="f-stock-lot" placeholder="ex: 2024/03">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Variété</label>
+          <select id="f-stock-variete">
+            <option>Toutes fleurs</option><option>Châtaigner</option><option>Bonbons</option><option>Hydromel</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Type pot</label>
+          <select id="f-stock-pot">
+            <option>Verre</option><option>Sachet 170 g</option><option>75 Cl Verre</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Contenance (ml)</label>
+          <input type="number" id="f-stock-ml" placeholder="500">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Quantité (+ entrée / - sortie)</label>
+          <input type="number" id="f-stock-qte" placeholder="ex: 18 ou -5">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Destination</label>
+          <input type="text" id="f-stock-dest" placeholder="Entrée en stock, client...">
+        </div>
+        <div class="form-group">
+          <label class="field-label">PVU TTC (€)</label>
+          <input type="number" id="f-stock-pvu" placeholder="ex: 8.00" step="0.01">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveStock()">💾 Enregistrer</button>
+    </div>
+  `;
+}
+
+async function saveStock() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
+  const qte = parseInt(document.getElementById('f-stock-qte')?.value);
+  const ml  = parseInt(document.getElementById('f-stock-ml')?.value) || null;
+  if (!qte) { toast('Quantité obligatoire', 'err'); return; }
+  const poids_total_kg = ml && qte ? +(Math.abs(qte) * ml / 1000 * Math.sign(qte)).toFixed(3) : null;
+  const record = {
+    id: genId(),
+    date:        document.getElementById('f-stock-date')?.value,
+    lot:         document.getElementById('f-stock-lot')?.value || null,
+    variete:     document.getElementById('f-stock-variete')?.value,
+    type_pot:    document.getElementById('f-stock-pot')?.value,
+    contenance_ml: ml,
+    quantite:    qte,
+    poids_total_kg,
+    destination: document.getElementById('f-stock-dest')?.value || null,
+    pvu_ttc:     parseFloat(document.getElementById('f-stock-pvu')?.value) || null
+  };
+  await saveRecord('conditionnements', record, qte > 0 ? 'Entrée stock enregistrée ✓' : 'Vente enregistrée ✓');
+  renderStock();
+}
+
+// --- ACHATS ---
+function renderAchats() {
+  const el = document.getElementById('content-achats');
+  const totalAnnee = DB.achats.filter(a => a.date && a.date.startsWith(new Date().getFullYear()))
+    .reduce((s,a) => s + (parseFloat(a.montant_ttc)||0), 0).toFixed(2);
+  el.innerHTML = `
+    <div class="form-card">
+      <div class="form-title">🛍️ Nouvel achat</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Date</label>
+          <input type="date" id="f-achats-date" value="${todayISO()}">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Fournisseur</label>
+          <input type="text" id="f-achats-fourn" list="fournisseurs-list" placeholder="Mat-Api, Cobee...">
+          <datalist id="fournisseurs-list">
+            <option>Mat-Api</option><option>Cobee</option><option>Lozachmeur</option><option>Pinson</option><option>L'atelier</option><option>Divers</option>
+          </datalist>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">Type</label>
+          <select id="f-achats-type">
+            <option>Matériel ruches</option><option>Cadres</option><option>Hausses</option>
+            <option>Nourriture abeilles</option><option>Candy</option><option>Sirop</option>
+            <option>Traitement varroa</option><option>Pots et capsules</option><option>Etiquettes</option>
+            <option>Reine</option><option>Essaim Hiverné</option><option>Appat Frelon</option><option>Divers</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Montant TTC (€)</label>
+          <input type="number" id="f-achats-montant" placeholder="0.00" step="0.01" min="0">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveAchat()">💾 Enregistrer</button>
+    </div>
+    <div class="form-card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+        <div class="form-title" style="margin-bottom:0">Dépenses ${new Date().getFullYear()}</div>
+        <span style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold-light)">${totalAnnee} €</span>
+      </div>
+      ${DB.achats.slice(0,8).map(a => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-soft)">
+          <div>
+            <div style="font-size:12px;color:var(--text)">${a.fournisseur || '—'} · ${a.type_achat || '—'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;color:var(--gold-light)">${parseFloat(a.montant_ttc||0).toFixed(2)} €</div>
+            <div style="font-size:10px;color:var(--text-dim)">${fmtDate(a.date)}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function saveAchat() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
+  const record = {
+    id: genId(),
+    date:        document.getElementById('f-achats-date')?.value,
+    fournisseur: document.getElementById('f-achats-fourn')?.value || null,
+    type_achat:  document.getElementById('f-achats-type')?.value,
+    montant_ttc: parseFloat(document.getElementById('f-achats-montant')?.value) || null
+  };
+  if (!record.date) { toast('Date obligatoire', 'err'); return; }
+  await saveRecord('achats', record, 'Achat enregistré ✓');
+  renderAchats();
+}
+
+// ============================================================
+// HELPERS COMMUNS
+// ============================================================
+async function saveRecord(table, record, successMsg) {
+  const cfg = getConfig();
+  try {
+    const r = await fetch(`${cfg.url}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(record)
+    });
+    if (r.ok || r.status === 201) {
+      if (DB[table] !== undefined) DB[table].unshift(record);
+      saveCache();
+      toast(successMsg, 'ok');
+      return true;
+    } else {
+      const e = await r.json();
+      toast(`Erreur: ${e.message}`, 'err');
+      return false;
+    }
+  } catch(e) { toast(`Erreur: ${e.message}`, 'err'); return false; }
+}
+
+function genId() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  try {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  } catch { return d; }
+}
+
+function toast(msg, type = '') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  renderMenu();
+  loadData();
+});
+</script>
+</body>
+</html>
