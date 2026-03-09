@@ -1891,6 +1891,29 @@ async function savePesee() {
   } catch(e) { toast(`Erreur: ${e.message}`, 'err'); }
 }
 
+async function deletePesee(peseeId, rucheId) {
+  if (!confirm('Supprimer cette pesée ?')) return;
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
+  try {
+    const r = await fetch(`${cfg.url}/rest/v1/pesees?id=eq.${peseeId}`, {
+      method: 'DELETE',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, Prefer: 'return=minimal' }
+    });
+    if (r.ok) {
+      DB.pesees = DB.pesees.filter(p => p.id !== peseeId);
+      saveCache();
+      toast('Pesée supprimée', 'ok');
+      navigate('ruche-detail', rucheId);
+    } else {
+      const e = await r.json();
+      toast(`Erreur: ${e.message}`, 'err');
+    }
+  } catch(e) { toast(`Erreur: ${e.message}`, 'err'); }
+}
+
+
+
 // --- NOURRISSEMENT ---
 function renderNourrir() {
   const el = document.getElementById('content-nourrir');
@@ -3385,9 +3408,14 @@ function renderRucheDetail(rucheId) {
               <div class="historique-label">${fmtDate(p.semaine)}</div>
               ${p.nb_cadres ? `<div style="font-size:10px;color:var(--text-muted)">${p.nb_cadres} cadres · ${p.nb_hausse || 0} hausse(s)</div>` : ''}
             </div>
-            <div style="text-align:right">
-              <div class="historique-val">${p.pesee ? parseFloat(p.pesee).toFixed(1) : (p.demi_pesee ? (p.demi_pesee*2).toFixed(1) : '—')} kg</div>
-              ${p.ratio ? `<div style="font-size:10px;color:var(--text-muted)">${parseFloat(p.ratio).toFixed(2)} kg/cadre</div>` : ''}
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="text-align:right">
+                <div class="historique-val">${p.pesee ? parseFloat(p.pesee).toFixed(1) : (p.demi_pesee ? (p.demi_pesee*2).toFixed(1) : '—')} kg</div>
+                ${p.ratio ? `<div style="font-size:10px;color:var(--text-muted)">${parseFloat(p.ratio).toFixed(2)} kg/cadre</div>` : ''}
+              </div>
+              <button onclick="deletePesee('${p.id}','${rucheId}')"
+                style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:4px 2px;line-height:1;flex-shrink:0"
+                title="Supprimer cette pesée">🗑️</button>
             </div>
           </div>
         `).join('')}
