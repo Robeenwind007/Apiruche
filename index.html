@@ -1110,7 +1110,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <button class="hdr-btn" id="btn-col-prev" onclick="navigateColonie(-1)" title="Colonie précédente" style="display:none">‹</button>
       <button class="hdr-btn" id="btn-col-next" onclick="navigateColonie(1)" title="Colonie suivante" style="display:none">›</button>
       <button class="hdr-btn" id="btn-sync" onclick="syncData()" title="Synchroniser">⟳</button>
-      <button class="hdr-btn" onclick="showSettings()" title="Paramètres">⚙</button>
+
     </div>
   </header>
 
@@ -1300,7 +1300,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.0.1';
+const APP_VERSION = '2.1.0';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -2351,6 +2351,7 @@ function renderProduction() {
       html += '</div></div>';
       html += '<div style="display:flex;gap:8px;margin-top:10px">';
       html += '<button onclick="renderProductionRetrait(\'' + h.id + '\')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:12px;font-weight:600;cursor:pointer">🍯 Retirer la hausse</button>';
+      html += '<button onclick="deleteHausse(\'' + h.id + '\')" style="padding:7px 12px;border-radius:8px;border:1px solid #e06060;background:transparent;color:#e06060;font-size:12px;font-weight:600;cursor:pointer">🗑</button>';
       html += '</div>';
       html += '</div>';
     });
@@ -2391,8 +2392,9 @@ function renderProduction() {
       html += '<div style="font-size:11px;color:var(--text-muted)">Retirée le ' + fmtDate(h.date_retrait) + '</div>';
       html += '</div>';
       const poids = parseFloat(h.poids_miel);
-      html += '<div style="text-align:right">';
+      html += '<div style="display:flex;align-items:center;gap:10px">';
       if (!isNaN(poids)) html += '<div style="font-family:DM Serif Display,serif;font-size:15px;color:var(--gold)">' + poids.toFixed(1) + ' <span style="font-size:10px">kg</span></div>';
+      html += '<button onclick="deleteHausse(\'' + h.id + '\')" style="padding:4px 8px;border-radius:6px;border:1px solid #e06060;background:transparent;color:#e06060;font-size:12px;cursor:pointer">🗑</button>';
       html += '</div>';
       html += '</div>';
     });
@@ -2425,23 +2427,23 @@ function renderProductionPose(prefillRucheId) {
     + '<input type="date" id="f-prod-date" value="' + todayISO() + '"></div>'
     + '</div>'
 
-    + '<div class="form-row full"><div class="form-group"><label class="field-label">Ruche</label>'
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="field-label">Ruche</label>'
     + '<select id="f-prod-ruche" onchange="updatePoidsRefHausse()">'
     + ruchesActives.map(r => {
-        const occ = DB.occupation_courante.find(o => o.ruche_id === r.id);
-        const colNom = occ ? (occ.colonie_nom || 'Colonie') : '';
         const disabled = ruchesOccupees.has(r.id) ? ' disabled' : '';
-        const label = r.id + (colNom ? ' — ' + colNom : '') + (ruchesOccupees.has(r.id) ? ' (hausse en place)' : '');
         const sel = prefillRucheId === r.id ? ' selected' : '';
-        return '<option value="' + r.id + '"' + disabled + sel + '>' + label + '</option>';
+        const suffix = ruchesOccupees.has(r.id) ? ' (hausse en place)' : '';
+        return '<option value="' + r.id + '"' + disabled + sel + '>' + r.id + (r.nom ? ' — ' + r.nom : '') + suffix + '</option>';
       }).join('')
-    + '</select></div></div>'
+    + '</select></div>'
+    + '<div class="form-group"><label class="field-label">Colonie</label>'
+    + '<input type="text" id="f-prod-colonie" readonly style="background:var(--bg2);color:var(--text-muted);cursor:default" placeholder="—"></div>'
+    + '</div>'
 
-    + '<div class="form-row">'
+    + '<div class="form-row full">'
     + '<div class="form-group"><label class="field-label">Poids de référence (kg) <span style="font-size:10px;color:var(--text-muted)">= poids ruche à la pose</span></label>'
     + '<input type="number" id="f-prod-poids-ref" placeholder="ex: 42.0" step="0.1" min="0"></div>'
-    + '<div class="form-group"><label class="field-label">Variété de miel attendue</label>'
-    + '<select id="f-prod-variete"><option value="">— Non définie —</option>' + getListes().variete_miel.map(v => '<option>' + v + '</option>').join('') + '</select></div>'
     + '</div>'
 
     + '<div id="prod-ref-hint" style="font-size:11px;color:var(--gold);padding:6px 0;display:none"></div>'
@@ -2449,13 +2451,21 @@ function renderProductionPose(prefillRucheId) {
     + '<button class="btn btn-primary btn-full" onclick="savePoseHausse()">💾 Poser la hausse</button>'
     + '</div>';
 
-  // Pré-remplir le poids de référence si ruche sélectionnée
-  if (prefillRucheId) updatePoidsRefHausse();
+  // Pré-remplir la colonie et le poids dès l'affichage (premier item sélectionné par défaut)
+  setTimeout(updatePoidsRefHausse, 50);
 }
 
 function updatePoidsRefHausse() {
   const rucheId = document.getElementById('f-prod-ruche')?.value;
   if (!rucheId) return;
+  // Remplir le champ colonie depuis DB.colonies
+  const colonieEl = document.getElementById('f-prod-colonie');
+  if (colonieEl) {
+    const occ = DB.occupation_courante.find(o => o.ruche_id === rucheId);
+    const col = occ ? DB.colonies.find(c => c.id === occ.colonie_id) : null;
+    colonieEl.value = col ? (col.nom || '—') : '—';
+  }
+  // Pré-remplir le poids depuis la dernière pesée
   const pesee = dernierePesee(rucheId);
   const hint = document.getElementById('prod-ref-hint');
   if (pesee) {
@@ -2469,6 +2479,26 @@ function updatePoidsRefHausse() {
   }
 }
 
+
+async function deleteHausse(hausseId) {
+  const cfg = getConfig();
+  const h = (DB.hausses || []).find(x => x.id === hausseId);
+  if (!h) return;
+  showConfirm('Supprimer la hausse ' + h.hausse_ref + ' sur ' + h.ruche_id + ' ?', async () => {
+    try {
+      const r = await fetch(cfg.url + '/rest/v1/hausses?id=eq.' + hausseId, {
+        method: 'DELETE',
+        headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key }
+      });
+      if (!r.ok) throw new Error(await r.text());
+      DB.hausses = DB.hausses.filter(x => x.id !== hausseId);
+      saveCache();
+      toast('Hausse supprimée', 'ok');
+      renderProduction();
+    } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+  });
+}
+
 async function savePoseHausse() {
   const cfg = getConfig();
   if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
@@ -2476,7 +2506,7 @@ async function savePoseHausse() {
   const ruche_id   = document.getElementById('f-prod-ruche')?.value;
   const date_pose  = document.getElementById('f-prod-date')?.value;
   const poids_ref  = parseFloat(document.getElementById('f-prod-poids-ref')?.value);
-  const variete    = document.getElementById('f-prod-variete')?.value || null;
+  const variete    = null;
   const occ = DB.occupation_courante.find(o => o.ruche_id === ruche_id);
 
   if (!hausse_ref || !ruche_id || !date_pose) { toast('Remplissez les champs obligatoires', 'err'); return; }
@@ -3312,7 +3342,12 @@ const LISTES_DEFAULT = {
 const LISTES_KEY = 'ruches_listes';
 
 function getListes() {
-  try { return JSON.parse(localStorage.getItem(LISTES_KEY)) || {...LISTES_DEFAULT}; } catch { return {...LISTES_DEFAULT}; }
+  try {
+    const saved = JSON.parse(localStorage.getItem(LISTES_KEY));
+    if (!saved) return {...LISTES_DEFAULT};
+    // Merger : ajouter les clés manquantes depuis LISTES_DEFAULT (nouvelles clés ajoutées après mise à jour)
+    return Object.assign({}, LISTES_DEFAULT, saved);
+  } catch { return {...LISTES_DEFAULT}; }
 }
 function saveListes(listes) { localStorage.setItem(LISTES_KEY, JSON.stringify(listes)); }
 
