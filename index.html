@@ -1166,6 +1166,11 @@ select option { background: var(--bg2); color: var(--cream); }
       <div id="content-stock" class="form-screen"></div>
     </div>
 
+    <!-- ===== PRODUCTION ===== -->
+    <div id="screen-production" class="screen">
+      <div id="content-production" class="form-screen"></div>
+    </div>
+
     <!-- ===== SAISIE PESÉE ===== -->
     <div id="screen-pesee" class="screen">
       <div id="content-pesee" class="form-screen"></div>
@@ -1256,6 +1261,23 @@ select option { background: var(--bg2); color: var(--cream); }
 <!-- TOAST -->
 <div id="toast-container"></div>
 
+<!-- Modale de confirmation -->
+<div id="confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border:1px solid var(--border-soft);border-radius:14px;padding:24px 20px;max-width:320px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+    <div id="confirm-message" style="font-size:14px;color:var(--text);text-align:center;margin-bottom:20px;line-height:1.5"></div>
+    <div style="display:flex;gap:10px">
+      <button id="confirm-cancel"
+        style="flex:1;padding:10px;background:transparent;border:1px solid var(--border-soft);border-radius:8px;color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer">
+        Annuler
+      </button>
+      <button id="confirm-ok"
+        style="flex:1;padding:10px;background:#a03030;border:1px solid #a03030;border-radius:8px;color:white;font-size:13px;font-weight:600;cursor:pointer">
+        Confirmer
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- SHEET CONFIG SUPABASE -->
 <div class="sheet-overlay" id="settings-overlay" onclick="closeSettings()"></div>
 <div class="sheet" id="settings-sheet">
@@ -1285,7 +1307,74 @@ function hideSplash() {
   const s = document.getElementById('splash');
   if (!s) return;
   s.classList.add('hide');
-  setTimeout(() => s.remove(), 700);
+  setTimeout(() => { s.remove(); checkAlertesDemarrage(); }, 700);
+}
+
+function checkAlertesDemarrage() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const alertes = [];
+
+  DB.ruches.forEach(r => {
+    // Cadre a males — alerte si > 14 jours
+    if (r.cadre_males && r.date_cadre_males) {
+      const debut = new Date(r.date_cadre_males);
+      const diff = Math.floor((today - debut) / 86400000);
+      if (diff > 14) {
+        const fin = new Date(debut); fin.setDate(fin.getDate() + 21);
+        alertes.push({ couleur: '#7ab85a', emoji: '🐝', nom: r.nom || r.id, action: 'Cadre à mâles', diff, label: 'Retrait prévu le ' + fmtDate(fin.toISOString().slice(0,10)) });
+      }
+    }
+    // Remerage/Division — alerte uniquement a partir de J+14
+    if (r.remerage_division && r.date_remerage_division) {
+      const debut = new Date(r.date_remerage_division);
+      const diff = Math.floor((today - debut) / 86400000);
+      if (diff >= 14) {
+        const couleur = diff >= 28 ? '#7ab85a' : '#e08020';
+        const finPrevue = new Date(debut); finPrevue.setDate(finPrevue.getDate() + 28);
+        const naiss = new Date(debut); naiss.setDate(naiss.getDate() + 14);
+        const label = diff >= 28
+          ? 'Remérage terminé — vérifier la reine'
+          : 'Naissance reine le ' + fmtDate(naiss.toISOString().slice(0,10)) + ' — fin prévue ' + fmtDate(finPrevue.toISOString().slice(0,10));
+        alertes.push({ couleur, emoji: '👑', nom: r.nom || r.id, action: 'Remérage/Division', diff, label });
+      }
+    }
+  });
+
+  if (!alertes.length) return;
+
+  const html = alertes.map(a =>
+    '<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)">' +
+      '<span style="font-size:18px;line-height:1.3">' + a.emoji + '</span>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:13px;font-weight:700;color:#fff">' + a.nom + '</div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,.7)">' + a.action + ' · <strong style="color:' + a.couleur + '">' + a.diff + 'j</strong></div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">' + a.label + '</div>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+
+  const banner = document.createElement('div');
+  banner.id = 'alerte-banner';
+  const header = document.createElement('div');
+  header.setAttribute('style', 'margin-bottom:6px');
+  header.innerHTML = '<div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:.5px">🔔 ALERTES EN COURS</div>';
+  banner.appendChild(header);
+  const body = document.createElement('div');
+  body.innerHTML = html;
+  banner.appendChild(body);
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Fermer';
+  closeBtn.setAttribute('style', 'margin-top:12px;width:100%;padding:9px;background:rgba(200,168,75,.15);border:1px solid rgba(200,168,75,.4);border-radius:8px;color:#c8a84b;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.3px');
+  closeBtn.onclick = () => banner.remove();
+  banner.appendChild(closeBtn);
+  Object.assign(banner.style, {
+    position: 'fixed', top: '0', left: '0', right: '0', zIndex: '9999',
+    background: '#1a1206', borderBottom: '2px solid #c8a84b',
+    padding: '14px 16px', boxShadow: '0 4px 24px rgba(0,0,0,.6)',
+    animation: 'toastIn .3s ease'
+  });
+  document.body.appendChild(banner);
 }
 
 // ============================================================
@@ -1333,7 +1422,7 @@ async function testSupabase() {
 let DB = {
   ruches: [], colonies: [], occupation_courante: [], occupations: [], pesees: [], nourrissements: [],
   traitements: [], actions: [], recoltes: [], conditionnements: [],
-  achats: [], pieges_frelons: [], comptages_varroa: [], ruchers: [], fiche_apiculteur: []
+  achats: [], pieges_frelons: [], comptages_varroa: [], ruchers: [], fiche_apiculteur: [], hausses: []
 };
 
 const CACHE_KEY = 'ruches_cache';
@@ -1385,7 +1474,7 @@ async function loadData(force = false) {
   btn.classList.add('sync-active');
 
   try {
-    const tables = ['ruches','colonies','occupation_courante','occupations','pesees','nourrissements','traitements','actions','recoltes','conditionnements','achats','pieges_frelons','comptages_varroa','ruchers','fiche_apiculteur'];
+    const tables = ['ruches','colonies','occupation_courante','occupations','pesees','nourrissements','traitements','actions','recoltes','conditionnements','achats','pieges_frelons','comptages_varroa','ruchers','fiche_apiculteur','hausses'];
     const results = await Promise.all(tables.map(t => fetchTable(cfg.url, cfg.key, t)));
     tables.forEach((t, i) => DB[t] = results[i]);
     // Recalculer occupation_courante : garder uniquement date_fin nulle ou future
@@ -1473,6 +1562,7 @@ function renderScreen(screen) {
   if (screen === 'dashboard') renderDashboard();
   if (screen === 'recolte')   renderRecolte();
   if (screen === 'stock')     renderStock();
+  if (screen === 'production') renderProduction();
   if (screen === 'pesee')     renderPesee();
   if (screen === 'nourrir')   renderNourrir();
   if (screen === 'soigner')   renderSoigner();
@@ -1497,6 +1587,7 @@ const MENU_SECTIONS = [
       { id: 'ruches',   icon: '🐝',  label: 'Ruches',    screen: 'ruches'   },
       { id: 'colonies', icon: '👑',  label: 'Colonies',  screen: 'colonies' },
       { id: 'stock',    icon: '🛒',  label: 'Stock & Vente', screen: 'stock' },
+      { id: 'production', icon: '🍯', label: 'Production',   screen: 'production' },
     ]
   },
   {
@@ -1505,7 +1596,7 @@ const MENU_SECTIONS = [
       { id: 'pesee',   icon: '⚖️',  label: 'Peser',    screen: 'pesee'   },
       { id: 'nourrir', icon: '🍽️',  label: 'Nourrir',  screen: 'nourrir' },
       { id: 'soigner', icon: '💊',  label: 'Soigner',  screen: 'soigner' },
-      { id: 'actions', icon: '🔧',  label: 'Actions',  screen: 'actions' },
+      { id: 'actions', icon: '🫱',  label: 'Actions',  screen: 'actions' },
     ]
   },
   {
@@ -1621,6 +1712,22 @@ function renderRuches() {
     const varSign  = variation > 0 ? '+' : '';
     const varColor = variation > 0 ? 'var(--green-light)' : variation < 0 ? '#e06060' : 'var(--text-muted)';
     const cadres   = pesee?.nb_cadres || null;
+
+    // Badges actions en cours
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diffCadre = r.date_cadre_males ? Math.floor((today - new Date(r.date_cadre_males)) / 86400000) : 0;
+    const bgCadre = diffCadre > 14 ? 'rgba(122,184,90,.2)' : 'rgba(160,48,48,.2)';
+    const colCadre = diffCadre > 14 ? '#7ab85a' : '#e06060';
+    const badgeCadre = r.cadre_males
+      ? '<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:' + bgCadre + ';color:' + colCadre + '">🐝 Cadre mâles</span>'
+      : '';
+    const diffRem = r.date_remerage_division ? Math.floor((today - new Date(r.date_remerage_division)) / 86400000) : 0;
+    const coulRem = diffRem >= 28 ? '#7ab85a' : diffRem >= 15 ? '#e08020' : '#e06060';
+    const bgRem = diffRem >= 28 ? 'rgba(122,184,90,.2)' : diffRem >= 15 ? 'rgba(224,128,32,.2)' : 'rgba(160,48,48,.2)';
+    const badgeRem = r.remerage_division
+      ? '<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:' + bgRem + ';color:' + coulRem + '">👑 Remérage ' + diffRem + 'j</span>'
+      : '';
+
     return `
       <div class="ruche-card ${!hasColonie ? 'ruche-inactive' : ''}">
         <div class="ruche-id" onclick="openPhotoUpload('${r.id}')" title="Changer la photo">
@@ -1633,16 +1740,20 @@ function renderRuches() {
             ${col ? `<span class="tag tag-green">${col.colonie_nom || 'Colonie active'}</span>` : '<span class="tag tag-muted">Sans colonie</span>'}
           </div>
         </div>
-        ${poids !== null ? `
         <div style="text-align:right;flex-shrink:0;cursor:pointer" onclick="navigate('ruche-detail','${r.nom}',true,'${r.id}')">
-          <div style="font-family:'DM Serif Display',serif;font-size:15px;font-weight:600;color:var(--gold-light);white-space:nowrap">
-            ${[
-              cadres ? `${cadres} cadres` : null,
-              variation !== null ? `<span style="color:${varColor}">${varSign}${variation.toFixed(1)}</span>` : null,
-              `<span style="color:${couleurPoidsCadre(poids, cadres)}">${poids.toFixed(1)} kg</span>`
-            ].filter(Boolean).join(' <span style="color:var(--border);font-size:11px">|</span> ')}
-          </div>
-        </div>` : ''}
+          ${(() => {
+            if (poids === null) return badgeCadre || badgeRem ? '<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end">' + badgeCadre + badgeRem + '</div>' : '';
+            const colPoids = couleurPoidsCadre(poids, cadres);
+            const parts = [];
+            if (cadres) parts.push(cadres + ' cadres');
+            if (variation !== null) parts.push('<span style="color:' + varColor + '">' + varSign + variation.toFixed(1) + '</span>');
+            parts.push('<span style="color:' + colPoids + '">' + poids.toFixed(1) + ' kg</span>');
+            const sep = ' <span style="color:var(--border);font-size:11px">|</span> ';
+            let html = '<div style="font-family:DM Serif Display,serif;font-size:15px;font-weight:600;color:var(--gold-light);white-space:nowrap">' + parts.join(sep) + '</div>';
+            if (badgeCadre || badgeRem) html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;justify-content:flex-end">' + badgeCadre + badgeRem + '</div>';
+            return html;
+          })()}
+        </div>
       </div>
     `;
   }).join('');
@@ -1655,44 +1766,93 @@ function renderDashboard() {
   const el = document.getElementById('content-dashboard');
   const nbRuches  = DB.ruches.filter(r => r.actif !== false).length;
   const nbColonies = DB.occupation_courante.length;
-  const totalMiel = DB.recoltes.reduce((s,r) => s + (parseFloat(r.poids_miel) || 0), 0).toFixed(1);
+  const anneeEnCours = new Date().getFullYear().toString();
+  const totalMiel = DB.recoltes
+    .filter(r => r.semaine && r.semaine.startsWith(anneeEnCours))
+    .reduce((s,r) => s + (parseFloat(r.poids_miel) || 0), 0).toFixed(1);
 
-  // Stock actuel
-  const stock = DB.conditionnements.reduce((s,c) => s + (parseInt(c.quantite) || 0), 0);
-
-  // Dernières pesées par ruche (moyenne)
-  const poidsMoyens = DB.ruches.filter(r => r.actif !== false).map(r => {
-    const p = dernierePesee(r.id);
-    return p ? parseFloat(p.demi_pesee) * 2 : null;
-  }).filter(Boolean);
-  const poidsMoyen = poidsMoyens.length ? (poidsMoyens.reduce((a,b) => a+b, 0) / poidsMoyens.length).toFixed(1) : '—';
-
-  // Sparkline pesées des 8 dernières semaines (toutes ruches, moyenne)
-  const semaines = [...new Set(DB.pesees.map(p => p.semaine))].sort().slice(-8);
-  const sparkData = semaines.map(s => {
-    const vals = DB.pesees.filter(p => p.semaine === s && p.demi_pesee).map(p => parseFloat(p.demi_pesee) * 2);
-    return vals.length ? vals.reduce((a,b) => a+b,0) / vals.length : 0;
+  // Stock actuel par variété
+  const stockParVariete = {};
+  DB.conditionnements.forEach(c => {
+    const v = c.variete || 'Sans variété';
+    stockParVariete[v] = (stockParVariete[v] || 0) + (parseInt(c.quantite) || 0);
   });
-  const maxSpark = Math.max(...sparkData, 1);
+  const stockTotal = Object.values(stockParVariete).reduce((s,v) => s+v, 0);
+  const stockEntries = Object.entries(stockParVariete).filter(([,q]) => q > 0);
+
+  // Ruches avec cadre à mâles ou remérage/division actifs
+  const alertesCadre = DB.ruches.filter(r => r.cadre_males);
+  const alertesRemerage = DB.ruches.filter(r => r.remerage_division);
+  const hasAlertes = alertesCadre.length > 0 || alertesRemerage.length > 0;
+
+  function dateFin(dateDebut, nbJours) {
+    if (!dateDebut) return '—';
+    const d = new Date(dateDebut);
+    d.setDate(d.getDate() + nbJours);
+    return fmtDate(d.toISOString().slice(0,10));
+  }
 
   el.innerHTML = `
     <div class="dash-row">
-      <div class="dash-stat"><div class="dash-stat-val">${nbRuches}</div><div class="dash-stat-lbl">Ruches actives</div></div>
+      <div class="dash-stat"><div class="dash-stat-val">${nbRuches}</div><div class="dash-stat-lbl">Ruches</div></div>
       <div class="dash-stat"><div class="dash-stat-val">${nbColonies}</div><div class="dash-stat-lbl">Colonies</div></div>
-      <div class="dash-stat"><div class="dash-stat-val">${poidsMoyen}<span style="font-size:14px;color:var(--text-dim)"> kg</span></div><div class="dash-stat-lbl">Poids moyen</div></div>
     </div>
     <div class="dash-row">
-      <div class="dash-stat"><div class="dash-stat-val">${totalMiel}<span style="font-size:14px;color:var(--text-dim)"> kg</span></div><div class="dash-stat-lbl">Récolté total</div></div>
-      <div class="dash-stat"><div class="dash-stat-val">${stock}</div><div class="dash-stat-lbl">Pots en stock</div></div>
-      <div class="dash-stat"><div class="dash-stat-val">${DB.traitements.length}</div><div class="dash-stat-lbl">Traitements</div></div>
-    </div>
-    ${sparkData.length ? `
-    <div class="dash-chart-card">
-      <div class="dash-chart-title">Poids moyen ruches — 8 dernières semaines</div>
-      <div class="sparkline-row">
-        ${sparkData.map((v,i) => `<div class="spark-bar" style="height:${Math.max(4, Math.round((v/maxSpark)*48))}px" title="${semaines[i]}: ${v.toFixed(1)} kg"></div>`).join('')}
+      <div class="dash-stat"><div class="dash-stat-val">${totalMiel}<span style="font-size:14px;color:var(--text-dim)"> kg</span></div><div class="dash-stat-lbl">Récolté ${anneeEnCours}</div></div>
+      <div class="dash-stat" style="cursor:pointer;position:relative" onclick="this.querySelector('.stock-detail').style.display=this.querySelector('.stock-detail').style.display==='none'?'block':'none'">
+        <div class="dash-stat-val">${stockTotal}</div>
+        <div class="dash-stat-lbl">En stock 🔽</div>
+        <div class="stock-detail" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 12px;min-width:160px;z-index:10;text-align:left;margin-top:4px">
+          ${stockEntries.length ? stockEntries.map(([v,q]) => `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:2px 0;color:var(--text)"><span>${v}</span><span style="font-weight:600;color:var(--gold)">${q}</span></div>`).join('') : '<div style="font-size:12px;color:var(--text-muted)">Stock vide</div>'}
+        </div>
       </div>
+      <div class="dash-stat"><div class="dash-stat-val">${DB.traitements.filter(t => t.date_pose && t.date_pose.startsWith(anneeEnCours)).length}</div><div class="dash-stat-lbl">Traitements ${anneeEnCours}</div></div>
+    </div>
+
+    ${hasAlertes ? `
+    <div class="dash-chart-card">
+      <div class="dash-chart-title">🔔 Actions en cours</div>
+      ${alertesCadre.map(r => {
+        const diff = r.date_cadre_males ? Math.floor((new Date() - new Date(r.date_cadre_males)) / 86400000) : 0;
+        const couleur = diff > 14 ? '#7ab85a' : '#a03030';
+        return `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border-soft);gap:8px" onclick="navigate('ruche-detail','${r.id}')" style="cursor:pointer">
+          <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+            <span style="font-size:15px">🐝</span>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${r.nom || r.id}</div>
+              <div style="font-size:11px;color:var(--text-muted)">Cadre à mâles</div>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:11px;color:var(--text-muted)">Début : ${r.date_cadre_males ? fmtDate(r.date_cadre_males) : '—'}</div>
+            <div style="font-size:11px;color:var(--text-muted)">Fin prévue : ${dateFin(r.date_cadre_males, 21)}</div>
+            <div style="font-size:11px;font-weight:600;color:${couleur}">${diff}j</div>
+          </div>
+        </div>`;
+      }).join('')}
+      ${alertesRemerage.map(r => {
+        const diff = r.date_remerage_division ? Math.floor((new Date() - new Date(r.date_remerage_division)) / 86400000) : 0;
+        const couleur = diff >= 28 ? '#7ab85a' : diff >= 15 ? '#e08020' : '#a03030';
+        return `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border-soft);gap:8px;cursor:pointer" onclick="navigate('ruche-detail','${r.id}')">
+          <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+            <span style="font-size:15px">👑</span>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${r.nom || r.id}</div>
+              <div style="font-size:11px;color:var(--text-muted)">Remérage / Division</div>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:11px;color:var(--text-muted)">Début : ${r.date_remerage_division ? fmtDate(r.date_remerage_division) : '—'}</div>
+            <div style="font-size:11px;color:var(--text-muted)">Naissance reine : ${dateFin(r.date_remerage_division, 14)}</div>
+            <div style="font-size:11px;color:var(--text-muted)">Fin prévue : ${dateFin(r.date_remerage_division, 28)}</div>
+            <div style="font-size:11px;font-weight:600;color:${couleur}">${diff}j</div>
+          </div>
+        </div>`;
+      }).join('')}
     </div>` : ''}
+
     <div class="dash-chart-card">
       <div class="dash-chart-title">Activité récente</div>
       ${DB.actions.slice(0,5).map(a => `
@@ -1891,25 +2051,26 @@ async function savePesee() {
   } catch(e) { toast(`Erreur: ${e.message}`, 'err'); }
 }
 
-async function deletePesee(peseeId, rucheId) {
-  if (!confirm('Supprimer cette pesée ?')) return;
-  const cfg = getConfig();
-  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
-  try {
-    const r = await fetch(`${cfg.url}/rest/v1/pesees?id=eq.${peseeId}`, {
-      method: 'DELETE',
-      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, Prefer: 'return=minimal' }
-    });
-    if (r.ok) {
-      DB.pesees = DB.pesees.filter(p => p.id !== peseeId);
-      saveCache();
-      toast('Pesée supprimée', 'ok');
-      navigate('ruche-detail', rucheId);
-    } else {
-      const e = await r.json();
-      toast(`Erreur: ${e.message}`, 'err');
-    }
-  } catch(e) { toast(`Erreur: ${e.message}`, 'err'); }
+function deletePesee(peseeId, rucheId) {
+  showConfirm('Supprimer cette pesée ?', async () => {
+    const cfg = getConfig();
+    if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
+    try {
+      const r = await fetch(`${cfg.url}/rest/v1/pesees?id=eq.${peseeId}`, {
+        method: 'DELETE',
+        headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, Prefer: 'return=minimal' }
+      });
+      if (r.ok) {
+        DB.pesees = DB.pesees.filter(p => p.id !== peseeId);
+        saveCache();
+        toast('Pesée supprimée', 'ok');
+        navigate('ruche-detail', rucheId);
+      } else {
+        const e = await r.json();
+        toast(`Erreur: ${e.message}`, 'err');
+      }
+    } catch(e) { toast(`Erreur: ${e.message}`, 'err'); }
+  }, 'Supprimer');
 }
 
 
@@ -1917,169 +2078,709 @@ async function deletePesee(peseeId, rucheId) {
 // --- NOURRISSEMENT ---
 function renderNourrir() {
   const el = document.getElementById('content-nourrir');
-  el.innerHTML = `
-    <div class="form-card">
-      <div class="form-title">🍽️ Nourrissement</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="field-label">Ruche</label>
-          ${rucheSelectHtml('f-nourrir-ruche', "updateColonieSelect('nourrir')")}
-        </div>
-        <div class="form-group">
-          <label class="field-label">Date</label>
-          <input type="date" id="f-nourrir-date" value="${todayISO()}">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="field-label">Type</label>
-          <select id="f-nourrir-type">
-            ${getListes().type_nourriture.map(v=>`<option>${v}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="field-label">Quantité (kg/L)</label>
-          <input type="number" id="f-nourrir-qte" placeholder="ex: 1.5" step="0.1" min="0">
-        </div>
-      </div>
-      <div class="form-row full">
-        <div class="form-group">
-          <label class="field-label">Colonie</label>
-          <select id="f-nourrir-colonie">${colonieOptions()}</select>
-        </div>
-      </div>
-      <button class="btn btn-primary btn-full" onclick="saveNourrir()">💾 Enregistrer</button>
-    </div>
-  `;
+  const ruchesActives = DB.ruches
+    .filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id))
+    .sort((a,b) => a.nom.localeCompare(b.nom));
+
+  el.innerHTML = '<div class="form-card">'
+    + '<div class="form-title">🍽️ Nourrissement</div>'
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="field-label">Type</label>'
+    + '<select id="f-nourrir-type">' + getListes().type_nourriture.map(v => '<option>' + v + '</option>').join('') + '</select></div>'
+    + '<div class="form-group"><label class="field-label">Date</label>'
+    + '<input type="date" id="f-nourrir-date" value="' + todayISO() + '"></div>'
+    + '</div>'
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="field-label">Quantité (kg/L)</label>'
+    + '<input type="number" id="f-nourrir-qte" placeholder="ex: 1.5" step="0.1" min="0"></div>'
+    + '</div>'
+    + '<div class="form-row full"><div class="form-group">'
+    + '<label class="field-label" style="display:flex;justify-content:space-between;align-items:center">'
+    + '<span>Ruches concernées</span>'
+    + '<span style="display:flex;gap:8px">'
+    + '<button onclick="toggleAllNourrir(true)" style="background:none;border:none;font-size:11px;color:var(--gold);cursor:pointer;padding:0">Toutes</button>'
+    + '<button onclick="toggleAllNourrir(false)" style="background:none;border:none;font-size:11px;color:var(--text-muted);cursor:pointer;padding:0">Aucune</button>'
+    + '</span></label>'
+    + '<div id="nourrir-ruches-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:4px"></div>'
+    + '</div></div>'
+    + '<button class="btn btn-primary btn-full" onclick="saveNourrir()">💾 Enregistrer</button>'
+    + '</div>';
+
+  const listEl = document.getElementById('nourrir-ruches-list');
+  ruchesActives.forEach(r => {
+    const col = DB.occupation_courante.find(o => o.ruche_id === r.id);
+    const colNom = col ? (col.colonie_nom || 'Colonie') : 'Sans colonie';
+    const card = document.createElement('div');
+    card.dataset.ruche = r.id;
+    card.dataset.selected = '0';
+    card.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border-soft);cursor:pointer;font-size:12px;color:var(--text-muted);transition:all .15s;user-select:none';
+    const ico = document.createElement('div');
+    ico.className = 'nourrir-cb-ico';
+    ico.style.cssText = 'width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s';
+    const info = document.createElement('div');
+    info.style.minWidth = '0';
+    info.innerHTML = '<div style="font-weight:600;color:var(--text)">' + r.id + '</div>'
+      + '<div style="font-size:10px">' + colNom + '</div>';
+    card.appendChild(ico);
+    card.appendChild(info);
+    card.addEventListener('click', function() {
+      const sel = this.dataset.selected === '1';
+      this.dataset.selected = sel ? '0' : '1';
+      if (!sel) {
+        this.style.borderColor = 'var(--gold)'; this.style.background = 'rgba(200,168,75,.12)';
+        ico.style.background = 'var(--gold)'; ico.style.borderColor = 'var(--gold)'; ico.textContent = '✓'; ico.style.color = '#000';
+      } else {
+        this.style.borderColor = 'var(--border-soft)'; this.style.background = 'transparent';
+        ico.style.background = 'transparent'; ico.style.borderColor = 'var(--border)'; ico.textContent = ''; ico.style.color = '';
+      }
+    });
+    listEl.appendChild(card);
+  });
+}
+
+function toggleAllNourrir(check) {
+  document.querySelectorAll('#nourrir-ruches-list [data-ruche]').forEach(card => {
+    const ico = card.querySelector('.nourrir-cb-ico');
+    card.dataset.selected = check ? '1' : '0';
+    if (check) {
+      card.style.borderColor = 'var(--gold)'; card.style.background = 'rgba(200,168,75,.12)';
+      if (ico) { ico.style.background = 'var(--gold)'; ico.style.borderColor = 'var(--gold)'; ico.textContent = '✓'; ico.style.color = '#000'; }
+    } else {
+      card.style.borderColor = 'var(--border-soft)'; card.style.background = 'transparent';
+      if (ico) { ico.style.background = 'transparent'; ico.style.borderColor = 'var(--border)'; ico.textContent = ''; ico.style.color = ''; }
+    }
+  });
 }
 
 async function saveNourrir() {
   const cfg = getConfig();
   if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
-  const ruche_id      = document.getElementById('f-nourrir-ruche')?.value;
-  const colonie_id    = document.getElementById('f-nourrir-colonie')?.value || null;
-  const semaine       = document.getElementById('f-nourrir-date')?.value;
+  const semaine         = document.getElementById('f-nourrir-date')?.value;
   const type_nourriture = document.getElementById('f-nourrir-type')?.value;
-  const quantite      = parseFloat(document.getElementById('f-nourrir-qte')?.value);
-  if (!ruche_id || !semaine || !type_nourriture) { toast('Remplissez les champs obligatoires', 'err'); return; }
-  const record = { id: genId(), ruche_id, colonie_id, semaine, type_nourriture, quantite: isNaN(quantite) ? null : quantite };
-  await saveRecord('nourrissements', record, 'Nourrissement enregistré ✓');
+  const quantite        = parseFloat(document.getElementById('f-nourrir-qte')?.value);
+  const selected = [...document.querySelectorAll('#nourrir-ruches-list [data-ruche][data-selected="1"]')];
+  if (!semaine)         { toast('Date requise', 'err'); return; }
+  if (!selected.length) { toast('Sélectionnez au moins une ruche', 'err'); return; }
+
+  const records = selected.map(card => {
+    const ruche_id = card.dataset.ruche;
+    const occ = DB.occupation_courante.find(o => o.ruche_id === ruche_id);
+    return { id: genId(), ruche_id, colonie_id: occ?.colonie_id || null, semaine, type_nourriture, quantite: isNaN(quantite) ? null : quantite };
+  });
+
+  try {
+    const r = await fetch(cfg.url + '/rest/v1/nourrissements', {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(records)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    records.forEach(rec => DB.nourrissements.unshift(rec));
+    saveCache();
+    toast(records.length > 1 ? records.length + ' nourrissements enregistrés ✓' : 'Nourrissement enregistré ✓', 'ok');
+    toggleAllNourrir(false);
+    renderNourrir();
+  } catch(e) { toast('Erreur : ' + e.message, 'err'); }
 }
 
 // --- TRAITEMENT ---
 function renderSoigner() {
   const el = document.getElementById('content-soigner');
-  el.innerHTML = `
-    <div class="form-card">
-      <div class="form-title">💊 Traitement</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="field-label">Ruche</label>
-          ${rucheSelectHtml('f-soigner-ruche', "updateColonieSelect('soigner')")}
-        </div>
-        <div class="form-group">
-          <label class="field-label">Date début</label>
-          <input type="date" id="f-soigner-date" value="${todayISO()}">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="field-label">Traitement</label>
-          <select id="f-soigner-type">
-            ${getListes().type_traitement.map(v=>`<option>${v}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="field-label">Date fin</label>
-          <input type="date" id="f-soigner-fin">
-        </div>
-      </div>
-      <div class="form-row full">
-        <div class="form-group">
-          <label class="field-label">Colonie</label>
-          <select id="f-soigner-colonie">${colonieOptions()}</select>
-        </div>
-      </div>
-      <button class="btn btn-primary btn-full" onclick="saveSoigner()">💾 Enregistrer</button>
-    </div>
-  `;
+  const ruchesActives = DB.ruches
+    .filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id))
+    .sort((a,b) => a.nom.localeCompare(b.nom));
+
+  el.innerHTML = '<div class="form-card">'
+    + '<div class="form-title">💊 Traitement</div>'
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="field-label">Traitement</label>'
+    + '<select id="f-soigner-type">' + getListes().type_traitement.map(v => '<option>' + v + '</option>').join('') + '</select></div>'
+    + '<div class="form-group"><label class="field-label">Date début</label>'
+    + '<input type="date" id="f-soigner-date" value="' + todayISO() + '"></div>'
+    + '</div>'
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="field-label">Date fin</label>'
+    + '<input type="date" id="f-soigner-fin"></div>'
+    + '</div>'
+    + '<div class="form-row full"><div class="form-group">'
+    + '<label class="field-label" style="display:flex;justify-content:space-between;align-items:center">'
+    + '<span>Ruches concernées</span>'
+    + '<span style="display:flex;gap:8px">'
+    + '<button onclick="toggleAllSoigner(true)" style="background:none;border:none;font-size:11px;color:var(--gold);cursor:pointer;padding:0">Toutes</button>'
+    + '<button onclick="toggleAllSoigner(false)" style="background:none;border:none;font-size:11px;color:var(--text-muted);cursor:pointer;padding:0">Aucune</button>'
+    + '</span></label>'
+    + '<div id="soigner-ruches-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:4px"></div>'
+    + '</div></div>'
+    + '<button class="btn btn-primary btn-full" onclick="saveSoigner()">💾 Enregistrer</button>'
+    + '</div>';
+
+  const listEl = document.getElementById('soigner-ruches-list');
+  ruchesActives.forEach(r => {
+    const col = DB.occupation_courante.find(o => o.ruche_id === r.id);
+    const colNom = col ? (col.colonie_nom || 'Colonie') : 'Sans colonie';
+    const card = document.createElement('div');
+    card.dataset.ruche = r.id;
+    card.dataset.selected = '0';
+    card.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border-soft);cursor:pointer;font-size:12px;color:var(--text-muted);transition:all .15s;user-select:none';
+    const ico = document.createElement('div');
+    ico.className = 'soigner-cb-ico';
+    ico.style.cssText = 'width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s';
+    const info = document.createElement('div');
+    info.style.minWidth = '0';
+    info.innerHTML = '<div style="font-weight:600;color:var(--text)">' + r.id + '</div>'
+      + '<div style="font-size:10px">' + colNom + '</div>';
+    card.appendChild(ico);
+    card.appendChild(info);
+    card.addEventListener('click', function() {
+      const sel = this.dataset.selected === '1';
+      this.dataset.selected = sel ? '0' : '1';
+      if (!sel) {
+        this.style.borderColor = 'var(--gold)';
+        this.style.background = 'rgba(200,168,75,.12)';
+        ico.style.background = 'var(--gold)'; ico.style.borderColor = 'var(--gold)'; ico.textContent = '✓'; ico.style.color = '#000';
+      } else {
+        this.style.borderColor = 'var(--border-soft)';
+        this.style.background = 'transparent';
+        ico.style.background = 'transparent'; ico.style.borderColor = 'var(--border)'; ico.textContent = ''; ico.style.color = '';
+      }
+    });
+    listEl.appendChild(card);
+  });
+}
+
+function toggleAllSoigner(check) {
+  document.querySelectorAll('#soigner-ruches-list [data-ruche]').forEach(card => {
+    const ico = card.querySelector('.soigner-cb-ico');
+    card.dataset.selected = check ? '1' : '0';
+    if (check) {
+      card.style.borderColor = 'var(--gold)'; card.style.background = 'rgba(200,168,75,.12)';
+      if (ico) { ico.style.background = 'var(--gold)'; ico.style.borderColor = 'var(--gold)'; ico.textContent = '✓'; ico.style.color = '#000'; }
+    } else {
+      card.style.borderColor = 'var(--border-soft)'; card.style.background = 'transparent';
+      if (ico) { ico.style.background = 'transparent'; ico.style.borderColor = 'var(--border)'; ico.textContent = ''; ico.style.color = ''; }
+    }
+  });
 }
 
 async function saveSoigner() {
   const cfg = getConfig();
   if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
-  const record = {
-    id: genId(),
-    ruche_id:        document.getElementById('f-soigner-ruche')?.value,
-    colonie_id:      document.getElementById('f-soigner-colonie')?.value || null,
-    semaine:         document.getElementById('f-soigner-date')?.value,
-    type_traitement: document.getElementById('f-soigner-type')?.value,
-    date_fin:        document.getElementById('f-soigner-fin')?.value || null
-  };
-  if (!record.ruche_id || !record.semaine) { toast('Remplissez les champs obligatoires', 'err'); return; }
-  await saveRecord('traitements', record, 'Traitement enregistré ✓');
+  const semaine        = document.getElementById('f-soigner-date')?.value;
+  const type_traitement = document.getElementById('f-soigner-type')?.value;
+  const date_fin       = document.getElementById('f-soigner-fin')?.value || null;
+  const selected = [...document.querySelectorAll('#soigner-ruches-list [data-ruche][data-selected="1"]')];
+  if (!semaine)         { toast('Date requise', 'err'); return; }
+  if (!selected.length) { toast('Sélectionnez au moins une ruche', 'err'); return; }
+
+  const records = selected.map(card => {
+    const rucheId = card.dataset.ruche;
+    const occ = DB.occupation_courante.find(o => o.ruche_id === rucheId);
+    return { id: genId(), ruche_id: rucheId, colonie_id: occ?.colonie_id || null, semaine, type_traitement, date_fin };
+  });
+
+  try {
+    const r = await fetch(cfg.url + '/rest/v1/traitements', {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(records)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    records.forEach(rec => DB.traitements.unshift(rec));
+    saveCache();
+    toast(records.length > 1 ? records.length + ' traitements enregistrés ✓' : 'Traitement enregistré ✓', 'ok');
+    toggleAllSoigner(false);
+    renderSoigner();
+  } catch(e) { toast('Erreur : ' + e.message, 'err'); }
 }
+
+
+// ============================================================
+// PRODUCTION — HAUSSES À MIEL
+// ============================================================
+
+function renderProduction() {
+  const el = document.getElementById('content-production');
+  const hausses = DB.hausses || [];
+  const actives  = hausses.filter(h => !h.date_retrait).sort((a,b) => new Date(b.date_pose) - new Date(a.date_pose));
+  const recoltees = hausses.filter(h => h.date_retrait).sort((a,b) => new Date(b.date_retrait) - new Date(a.date_retrait));
+
+  // Calcul miel estimé en temps réel pour hausses actives
+  function mielsActif(h) {
+    const pesees = DB.pesees.filter(p => p.ruche_id === h.ruche_id && p.semaine >= h.date_pose)
+      .sort((a,b) => new Date(b.semaine) - new Date(a.semaine));
+    if (!pesees.length || !h.poids_ref) return null;
+    const dernPoids = parseFloat(calculerPesee(pesees[0]));
+    return isNaN(dernPoids) ? null : Math.max(0, dernPoids - parseFloat(h.poids_ref)).toFixed(1);
+  }
+
+  // Bloc hausses actives
+  let html = '<div class="form-card">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  html += '<div class="form-title" style="margin:0">🍯 Hausses en cours</div>';
+  html += '<button class="btn btn-primary" style="font-size:12px;padding:7px 14px" onclick="renderProductionPose()">+ Poser une hausse</button>';
+  html += '</div>';
+
+  if (!actives.length) {
+    html += '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">Aucune hausse en place actuellement</div>';
+  } else {
+    actives.forEach(h => {
+      const ruche = DB.ruches.find(r => r.id === h.ruche_id);
+      const occ   = DB.occupation_courante.find(o => o.ruche_id === h.ruche_id);
+      const miel  = mielsActif(h);
+      const jours = Math.floor((new Date() - new Date(h.date_pose)) / 86400000);
+      const colNom = occ ? (occ.colonie_nom || 'Colonie') : '—';
+
+      html += '<div style="padding:12px 0;border-bottom:1px solid var(--border-soft)">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+      html += '<div>';
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<span style="font-size:15px;font-weight:700;color:var(--gold)">' + h.hausse_ref + '</span>';
+      html += '<span style="font-size:13px;font-weight:600;color:var(--text)">' + (ruche ? ruche.id : h.ruche_id) + '</span>';
+      html += '<span style="font-size:11px;color:var(--text-muted)">' + colNom + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);margin-top:3px">Posée le ' + fmtDate(h.date_pose) + ' · ' + jours + ' j' + (h.variete ? ' · ' + h.variete : '') + '</div>';
+      html += '</div>';
+      html += '<div style="text-align:right;flex-shrink:0">';
+      if (miel !== null) {
+        const coulMiel = parseFloat(miel) >= 5 ? '#7ab85a' : parseFloat(miel) >= 2 ? '#e08020' : 'var(--text-muted)';
+        html += '<div style="font-family:DM Serif Display,serif;font-size:18px;font-weight:600;color:' + coulMiel + '">' + miel + ' <span style="font-size:11px">kg</span></div>';
+        html += '<div style="font-size:10px;color:var(--text-muted)">miel estimé</div>';
+      } else {
+        html += '<div style="font-size:11px;color:var(--text-muted)">Pas de pesée</div>';
+      }
+      html += '</div></div>';
+      html += '<div style="display:flex;gap:8px;margin-top:10px">';
+      html += '<button onclick="renderProductionRetrait(\'' + h.id + '\')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:12px;font-weight:600;cursor:pointer">🍯 Retirer la hausse</button>';
+      html += '</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // Historique récoltes
+  html += '<div class="form-card">';
+  html += '<div class="form-title" style="margin-bottom:12px">📋 Historique récoltes</div>';
+  if (!recoltees.length) {
+    html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">Aucune récolte enregistrée</div>';
+  } else {
+    // Stats annuelles
+    const annee = new Date().getFullYear().toString();
+    const totalAnnee = recoltees
+      .filter(h => h.date_retrait && h.date_retrait.startsWith(annee))
+      .reduce((s,h) => s + (parseFloat(h.poids_miel) || 0), 0);
+    const totalGlobal = recoltees.reduce((s,h) => s + (parseFloat(h.poids_miel) || 0), 0);
+
+    html += '<div style="display:flex;gap:12px;margin-bottom:14px">';
+    html += '<div style="flex:1;background:rgba(200,168,75,.08);border-radius:10px;padding:10px;text-align:center">';
+    html += '<div style="font-family:DM Serif Display,serif;font-size:20px;color:var(--gold)">' + totalAnnee.toFixed(1) + ' kg</div>';
+    html += '<div style="font-size:10px;color:var(--text-muted)">Récolté ' + annee + '</div></div>';
+    html += '<div style="flex:1;background:rgba(200,168,75,.05);border-radius:10px;padding:10px;text-align:center">';
+    html += '<div style="font-family:DM Serif Display,serif;font-size:20px;color:var(--gold-light)">' + totalGlobal.toFixed(1) + ' kg</div>';
+    html += '<div style="font-size:10px;color:var(--text-muted)">Total historique</div></div>';
+    html += '</div>';
+
+    recoltees.slice(0, 15).forEach(h => {
+      const ruche = DB.ruches.find(r => r.id === h.ruche_id);
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft)">';
+      html += '<div>';
+      html += '<div style="display:flex;align-items:center;gap:6px">';
+      html += '<span style="font-size:12px;font-weight:700;color:var(--gold)">' + h.hausse_ref + '</span>';
+      html += '<span style="font-size:12px;color:var(--text)">' + (ruche ? ruche.id : h.ruche_id) + '</span>';
+      if (h.variete) html += '<span style="font-size:10px;color:var(--text-muted)">' + h.variete + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted)">Retirée le ' + fmtDate(h.date_retrait) + '</div>';
+      html += '</div>';
+      const poids = parseFloat(h.poids_miel);
+      html += '<div style="text-align:right">';
+      if (!isNaN(poids)) html += '<div style="font-family:DM Serif Display,serif;font-size:15px;color:var(--gold)">' + poids.toFixed(1) + ' <span style="font-size:10px">kg</span></div>';
+      html += '</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+// --- FORMULAIRE POSE DE HAUSSE ---
+function renderProductionPose(prefillRucheId) {
+  const el = document.getElementById('content-production');
+  const ruchesActives = DB.ruches
+    .filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id))
+    .sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric: true}));
+
+  // Hausses déjà en place (une seule par ruche)
+  const ruchesOccupees = new Set((DB.hausses || []).filter(h => !h.date_retrait).map(h => h.ruche_id));
+
+  el.innerHTML = '<div class="form-card">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'
+    + '<button onclick="renderProduction()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;line-height:1">←</button>'
+    + '<div class="form-title" style="margin:0">🍯 Poser une hausse</div>'
+    + '</div>'
+
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="field-label">Référence hausse</label>'
+    + '<select id="f-prod-hausse">' + getListes().hausse_ref.map(v => '<option>' + v + '</option>').join('') + '</select></div>'
+    + '<div class="form-group"><label class="field-label">Date de pose</label>'
+    + '<input type="date" id="f-prod-date" value="' + todayISO() + '"></div>'
+    + '</div>'
+
+    + '<div class="form-row full"><div class="form-group"><label class="field-label">Ruche</label>'
+    + '<select id="f-prod-ruche" onchange="updatePoidsRefHausse()">'
+    + ruchesActives.map(r => {
+        const occ = DB.occupation_courante.find(o => o.ruche_id === r.id);
+        const colNom = occ ? (occ.colonie_nom || 'Colonie') : '';
+        const disabled = ruchesOccupees.has(r.id) ? ' disabled' : '';
+        const label = r.id + (colNom ? ' — ' + colNom : '') + (ruchesOccupees.has(r.id) ? ' (hausse en place)' : '');
+        const sel = prefillRucheId === r.id ? ' selected' : '';
+        return '<option value="' + r.id + '"' + disabled + sel + '>' + label + '</option>';
+      }).join('')
+    + '</select></div></div>'
+
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="field-label">Poids de référence (kg) <span style="font-size:10px;color:var(--text-muted)">= poids ruche à la pose</span></label>'
+    + '<input type="number" id="f-prod-poids-ref" placeholder="ex: 42.0" step="0.1" min="0"></div>'
+    + '<div class="form-group"><label class="field-label">Variété de miel attendue</label>'
+    + '<select id="f-prod-variete"><option value="">— Non définie —</option>' + getListes().variete_miel.map(v => '<option>' + v + '</option>').join('') + '</select></div>'
+    + '</div>'
+
+    + '<div id="prod-ref-hint" style="font-size:11px;color:var(--gold);padding:6px 0;display:none"></div>'
+
+    + '<button class="btn btn-primary btn-full" onclick="savePoseHausse()">💾 Poser la hausse</button>'
+    + '</div>';
+
+  // Pré-remplir le poids de référence si ruche sélectionnée
+  if (prefillRucheId) updatePoidsRefHausse();
+}
+
+function updatePoidsRefHausse() {
+  const rucheId = document.getElementById('f-prod-ruche')?.value;
+  if (!rucheId) return;
+  const pesee = dernierePesee(rucheId);
+  const hint = document.getElementById('prod-ref-hint');
+  if (pesee) {
+    const poids = parseFloat(calculerPesee(pesee));
+    if (!isNaN(poids)) {
+      document.getElementById('f-prod-poids-ref').value = poids.toFixed(1);
+      if (hint) { hint.textContent = '✓ Pré-rempli depuis la dernière pesée du ' + fmtDate(pesee.semaine); hint.style.display = 'block'; }
+    }
+  } else {
+    if (hint) { hint.textContent = 'Aucune pesée récente — saisir manuellement'; hint.style.display = 'block'; }
+  }
+}
+
+async function savePoseHausse() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
+  const hausse_ref = document.getElementById('f-prod-hausse')?.value;
+  const ruche_id   = document.getElementById('f-prod-ruche')?.value;
+  const date_pose  = document.getElementById('f-prod-date')?.value;
+  const poids_ref  = parseFloat(document.getElementById('f-prod-poids-ref')?.value);
+  const variete    = document.getElementById('f-prod-variete')?.value || null;
+  const occ = DB.occupation_courante.find(o => o.ruche_id === ruche_id);
+
+  if (!hausse_ref || !ruche_id || !date_pose) { toast('Remplissez les champs obligatoires', 'err'); return; }
+  if (isNaN(poids_ref)) { toast('Poids de référence requis', 'err'); return; }
+
+  const record = {
+    id: genId(), hausse_ref, ruche_id,
+    colonie_id: occ?.colonie_id || null,
+    date_pose, poids_ref, variete,
+    date_retrait: null, poids_retrait: null, poids_miel: null
+  };
+
+  try {
+    const r = await fetch(cfg.url + '/rest/v1/hausses', {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(record)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    if (!DB.hausses) DB.hausses = [];
+    DB.hausses.unshift(record);
+    saveCache();
+    toast('Hausse ' + hausse_ref + ' posée sur ' + ruche_id + ' ✓', 'ok');
+    renderProduction();
+  } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+}
+
+// --- FORMULAIRE RETRAIT DE HAUSSE ---
+function renderProductionRetrait(hausseId) {
+  const el = document.getElementById('content-production');
+  const h = (DB.hausses || []).find(x => x.id === hausseId);
+  if (!h) { toast('Hausse introuvable', 'err'); return; }
+  const ruche = DB.ruches.find(r => r.id === h.ruche_id);
+  const occ   = DB.occupation_courante.find(o => o.ruche_id === h.ruche_id);
+
+  // Poids estimé actuel
+  const pesees = DB.pesees.filter(p => p.ruche_id === h.ruche_id && p.semaine >= h.date_pose)
+    .sort((a,b) => new Date(b.semaine) - new Date(a.semaine));
+  const dernPoids = pesees.length ? parseFloat(calculerPesee(pesees[0])) : null;
+  const mielsActif = (dernPoids !== null && h.poids_ref) ? Math.max(0, dernPoids - parseFloat(h.poids_ref)).toFixed(1) : null;
+
+  el.innerHTML = '<div class="form-card">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'
+    + '<button onclick="renderProduction()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;line-height:1">←</button>'
+    + '<div class="form-title" style="margin:0">🍯 Retirer la hausse</div>'
+    + '</div>'
+
+    // Récap hausse
+    + '<div style="background:rgba(200,168,75,.08);border-radius:12px;padding:12px;margin-bottom:14px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center">'
+    + '<div>'
+    + '<div style="font-size:16px;font-weight:700;color:var(--gold)">' + h.hausse_ref
+      + ' <span style="font-size:13px;font-weight:400;color:var(--text)">' + (ruche ? ruche.id : h.ruche_id) + '</span></div>'
+    + '<div style="font-size:11px;color:var(--text-muted)">Posée le ' + fmtDate(h.date_pose)
+      + (occ ? ' · ' + (occ.colonie_nom || 'Colonie') : '') + '</div>'
+    + '<div style="font-size:11px;color:var(--text-muted)">Poids de référence : ' + parseFloat(h.poids_ref).toFixed(1) + ' kg</div>'
+    + '</div>'
+    + (mielsActif !== null ? '<div style="text-align:right"><div style="font-family:DM Serif Display,serif;font-size:22px;color:var(--gold)">~' + mielsActif + ' kg</div><div style="font-size:10px;color:var(--text-muted)">miel estimé</div></div>' : '')
+    + '</div></div>'
+
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="field-label">Date de retrait</label>'
+    + '<input type="date" id="f-retrait-date" value="' + todayISO() + '"></div>'
+    + '<div class="form-group"><label class="field-label">Poids ruche au retrait (kg)</label>'
+    + '<input type="number" id="f-retrait-poids" placeholder="ex: 38.5" step="0.1" min="0"'
+    + (dernPoids !== null ? ' value="' + dernPoids.toFixed(1) + '"' : '') + ' oninput="calcMielRetrait()"></div>'
+    + '</div>'
+
+    + '<div id="retrait-miel-calc" style="text-align:center;padding:10px;border-radius:10px;background:rgba(200,168,75,.08);margin-bottom:12px;display:none">'
+    + '<div style="font-size:11px;color:var(--text-muted)">Miel récolté</div>'
+    + '<div id="retrait-miel-val" style="font-family:DM Serif Display,serif;font-size:28px;font-weight:600;color:var(--gold)">— kg</div>'
+    + '</div>'
+
+    + '<div class="form-row full"><div class="form-group"><label class="field-label">Variété de miel</label>'
+    + '<select id="f-retrait-variete"><option value="">— Non définie —</option>'
+    + getListes().variete_miel.map(v => '<option' + (h.variete === v ? ' selected' : '') + '>' + v + '</option>').join('')
+    + '</select></div></div>'
+
+    + '<div class="form-row full"><div class="form-group"><label class="field-label">Notes</label>'
+    + '<input type="text" id="f-retrait-notes" placeholder="Qualité, observations..." value="' + (h.notes || '') + '"></div></div>'
+
+    + '<button class="btn btn-primary btn-full" onclick="saveRetraitHausse(\'' + hausseId + '\')">✅ Confirmer la récolte</button>'
+    + '</div>';
+
+  // Init calcul si poids déjà rempli
+  setTimeout(calcMielRetrait, 50);
+}
+
+function calcMielRetrait() {
+  const pRetraitEl = document.getElementById('f-retrait-poids');
+  const calcEl = document.getElementById('retrait-miel-calc');
+  const valEl  = document.getElementById('retrait-miel-val');
+  const h = (DB.hausses || []).find(x => !x.date_retrait && document.getElementById('content-production')?.innerHTML.includes(x.id));
+
+  if (!pRetraitEl || !calcEl || !valEl) return;
+  const pRetrait = parseFloat(pRetraitEl.value);
+
+  // Trouver la hausse active affichée (celle dont le formulaire est ouvert)
+  const allActive = (DB.hausses || []).filter(x => !x.date_retrait);
+  const hausseId = document.querySelector('[onclick*="saveRetraitHausse"]')
+    ?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+  const hausse = (DB.hausses || []).find(x => x.id === hausseId);
+
+  if (!hausse || isNaN(pRetrait)) { calcEl.style.display = 'none'; return; }
+  const miel = Math.max(0, pRetrait - parseFloat(hausse.poids_ref));
+  calcEl.style.display = 'block';
+  valEl.textContent = miel.toFixed(1) + ' kg';
+  valEl.style.color = miel >= 5 ? '#7ab85a' : miel >= 2 ? '#e08020' : 'var(--text-muted)';
+}
+
+async function saveRetraitHausse(hausseId) {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
+  const h = (DB.hausses || []).find(x => x.id === hausseId);
+  if (!h) return;
+
+  const date_retrait  = document.getElementById('f-retrait-date')?.value;
+  const poids_retrait = parseFloat(document.getElementById('f-retrait-poids')?.value);
+  const variete       = document.getElementById('f-retrait-variete')?.value || null;
+  const notes         = document.getElementById('f-retrait-notes')?.value || null;
+
+  if (!date_retrait)      { toast('Date de retrait requise', 'err'); return; }
+  if (isNaN(poids_retrait)) { toast('Poids au retrait requis', 'err'); return; }
+
+  const poids_miel = Math.max(0, poids_retrait - parseFloat(h.poids_ref));
+  const update = { date_retrait, poids_retrait, poids_miel: parseFloat(poids_miel.toFixed(2)), variete, notes };
+
+  showConfirm('Confirmer la récolte de ' + poids_miel.toFixed(1) + ' kg de miel pour la hausse ' + h.hausse_ref + ' ?', async () => {
+    try {
+      const r = await fetch(cfg.url + '/rest/v1/hausses?id=eq.' + hausseId, {
+        method: 'PATCH',
+        headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify(update)
+      });
+      if (!r.ok) throw new Error(await r.text());
+      Object.assign(h, update);
+      saveCache();
+      toast('Récolte de ' + poids_miel.toFixed(1) + ' kg enregistrée ✓', 'ok');
+      renderProduction();
+    } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+  });
+}
+
 
 // --- ACTIONS ---
 // ACTIONS_LIST remplacée par getListes().type_action
 
 function renderActionsScreen() {
   const el = document.getElementById('content-actions');
-  el.innerHTML = `
-    <div class="form-card">
-      <div class="form-title">🔧 Action rucher</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="field-label">Ruche</label>
-          ${rucheSelectHtml('f-actions-ruche', "updateColonieSelect('actions')")}
-        </div>
-        <div class="form-group">
-          <label class="field-label">Date</label>
-          <input type="date" id="f-actions-date" value="${todayISO()}">
-        </div>
-      </div>
-      <div class="form-row full">
-        <div class="form-group">
-          <label class="field-label">Action</label>
-          <select id="f-actions-action">${getListes().type_action.map(a=>`<option>${a}</option>`).join('')}</select>
-        </div>
-      </div>
-      <div class="form-row full">
-        <div class="form-group">
-          <label class="field-label">Colonie</label>
-          <select id="f-actions-colonie">${colonieOptions()}</select>
-        </div>
-      </div>
-      <button class="btn btn-primary btn-full" onclick="saveAction()">💾 Enregistrer</button>
-    </div>
-    <div class="form-card">
-      <div class="form-title" style="margin-bottom:10px">Dernières actions</div>
-      ${DB.actions.slice(0,8).map(a => `
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-soft)">
-          <div>
-            <div style="font-size:13px;color:var(--text)">${a.action}</div>
-            <div style="font-size:11px;color:var(--text-dim)">${a.ruche_id}</div>
-          </div>
-          <div style="font-size:11px;color:var(--text-dim);text-align:right">${fmtDate(a.semaine)}</div>
-        </div>
-      `).join('')}
-    </div>
-  `;
+  const ruchesActives = DB.ruches.filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id)).sort((a,b) => a.nom.localeCompare(b.nom));
+
+  // Dernières actions HTML (sans checkboxes)
+  const dernieresHtml = DB.actions.slice(0,8).map(a => {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft)">'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:13px;color:var(--text)">' + a.action + '</div>'
+      + '<div style="font-size:11px;color:var(--text-dim)">' + a.ruche_id + ' · ' + fmtDate(a.semaine) + '</div>'
+      + '</div>'
+      + '<button onclick="deleteAction(\'' + a.id + '\',\'actions\',null)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:4px 2px;flex-shrink:0" title="Supprimer">🗑️</button>'
+      + '</div>';
+  }).join('');
+
+  el.innerHTML = '<div class="form-card">'
+    + '<div class="form-title">🫱 Action rucher</div>'
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="field-label">Action</label>'
+    + '<select id="f-actions-action">' + getListes().type_action.map(a => '<option>' + a + '</option>').join('') + '</select></div>'
+    + '<div class="form-group"><label class="field-label">Date</label>'
+    + '<input type="date" id="f-actions-date" value="' + todayISO() + '"></div>'
+    + '</div>'
+    + '<div class="form-row full"><div class="form-group">'
+    + '<label class="field-label" style="display:flex;justify-content:space-between;align-items:center">'
+    + '<span>Ruches concernées</span>'
+    + '<span style="display:flex;gap:8px">'
+    + '<button onclick="toggleAllRuchesAction(true)" style="background:none;border:none;font-size:11px;color:var(--gold);cursor:pointer;padding:0">Toutes</button>'
+    + '<button onclick="toggleAllRuchesAction(false)" style="background:none;border:none;font-size:11px;color:var(--text-muted);cursor:pointer;padding:0">Aucune</button>'
+    + '</span></label>'
+    + '<div id="actions-ruches-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:4px"></div>'
+    + '</div></div>'
+    + '<button class="btn btn-primary btn-full" onclick="saveAction()">💾 Enregistrer</button>'
+    + '</div>'
+    + '<div class="form-card">'
+    + '<div class="form-title" style="margin-bottom:10px">Dernières actions</div>'
+    + dernieresHtml
+    + '</div>';
+
+  // Construire les checkboxes via DOM (évite tous les problèmes de quotes/template literals)
+  const listEl = document.getElementById('actions-ruches-list');
+  ruchesActives.forEach(r => {
+    const col = DB.occupation_courante.find(o => o.ruche_id === r.id);
+    const colNom = col ? (col.colonie_nom || 'Colonie') : 'Sans colonie';
+
+    const card = document.createElement('div');
+    card.dataset.ruche = r.id;
+    card.dataset.selected = '0';
+    card.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border-soft);cursor:pointer;font-size:12px;color:var(--text-muted);transition:all .15s;user-select:none';
+
+    // Icône visuelle sélection
+    const ico = document.createElement('div');
+    ico.className = 'action-cb-ico';
+    ico.style.cssText = 'width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s';
+
+    const info = document.createElement('div');
+    info.style.minWidth = '0';
+    info.innerHTML = '<div style="font-weight:600;color:var(--text)">' + r.id + '</div>'
+      + '<div style="font-size:10px">' + r.nom + '</div>';
+
+    card.appendChild(ico);
+    card.appendChild(info);
+
+    card.addEventListener('click', function() {
+      const sel = this.dataset.selected === '1';
+      this.dataset.selected = sel ? '0' : '1';
+      if (!sel) {
+        this.style.borderColor = 'var(--gold)';
+        this.style.background = 'rgba(200,168,75,.12)';
+        this.style.color = 'var(--text)';
+        ico.style.background = 'var(--gold)';
+        ico.style.borderColor = 'var(--gold)';
+        ico.textContent = '✓';
+        ico.style.color = '#000';
+      } else {
+        this.style.borderColor = 'var(--border-soft)';
+        this.style.background = 'transparent';
+        this.style.color = 'var(--text-muted)';
+        ico.style.background = 'transparent';
+        ico.style.borderColor = 'var(--border)';
+        ico.textContent = '';
+      }
+    });
+
+    listEl.appendChild(card);
+  });
+}
+
+function toggleAllRuchesAction(check) {
+  document.querySelectorAll('#actions-ruches-list [data-ruche]').forEach(card => {
+    const ico = card.querySelector('.action-cb-ico');
+    card.dataset.selected = check ? '1' : '0';
+    if (check) {
+      card.style.borderColor = 'var(--gold)';
+      card.style.background = 'rgba(200,168,75,.12)';
+      card.style.color = 'var(--text)';
+      if (ico) { ico.style.background = 'var(--gold)'; ico.style.borderColor = 'var(--gold)'; ico.textContent = '✓'; ico.style.color = '#000'; }
+    } else {
+      card.style.borderColor = 'var(--border-soft)';
+      card.style.background = 'transparent';
+      card.style.color = 'var(--text-muted)';
+      if (ico) { ico.style.background = 'transparent'; ico.style.borderColor = 'var(--border)'; ico.textContent = ''; }
+    }
+  });
 }
 
 async function saveAction() {
   const cfg = getConfig();
   if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
-  const record = {
-    id: genId(),
-    ruche_id:   document.getElementById('f-actions-ruche')?.value,
-    colonie_id: document.getElementById('f-actions-colonie')?.value || null,
-    semaine:    document.getElementById('f-actions-date')?.value,
-    action:     document.getElementById('f-actions-action')?.value
-  };
-  if (!record.ruche_id || !record.semaine) { toast('Remplissez les champs obligatoires', 'err'); return; }
-  await saveRecord('actions', record, 'Action enregistrée ✓');
+  const semaine  = document.getElementById('f-actions-date')?.value;
+  const action   = document.getElementById('f-actions-action')?.value;
+  const selected = [...document.querySelectorAll('#actions-ruches-list [data-ruche][data-selected="1"]')];
+  if (!semaine)         { toast('Date requise', 'err'); return; }
+  if (!selected.length) { toast('Sélectionnez au moins une ruche', 'err'); return; }
+
+  const records = selected.map(card => {
+    const rucheId = card.dataset.ruche;
+    const occ = DB.occupation_courante.find(o => o.ruche_id === rucheId);
+    return { id: genId(), ruche_id: rucheId, colonie_id: occ?.colonie_id || null, semaine, action };
+  });
+
+  try {
+    const r = await fetch(cfg.url + '/rest/v1/actions', {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(records)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    records.forEach(rec => DB.actions.unshift(rec));
+    saveCache();
+    toast(records.length > 1 ? records.length + ' actions enregistrées ✓' : 'Action enregistrée ✓', 'ok');
+    // Décocher toutes les ruches après succès
+    toggleAllRuchesAction(false);
+    renderActionsScreen();
+  } catch(e) { toast('Erreur : ' + e.message, 'err'); }
 }
+
+function deleteAction(actionId, returnScreen, returnId) {
+  showConfirm('Supprimer cette action ?', async () => {
+    const cfg = getConfig();
+    if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
+    try {
+      const r = await fetch(`${cfg.url}/rest/v1/actions?id=eq.${actionId}`, {
+        method: 'DELETE',
+        headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, Prefer: 'return=minimal' }
+      });
+      if (!r.ok) throw new Error(await r.text());
+      DB.actions = DB.actions.filter(a => a.id !== actionId);
+      saveCache();
+      toast('Action supprimée', 'ok');
+      if (returnScreen === 'actions') renderActionsScreen();
+      else navigate(returnScreen, null, true, returnId);
+    } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+  }, 'Supprimer');
+}
+
+
 
 // --- VARROA ---
 function renderVarroa() {
@@ -2283,7 +2984,7 @@ function renderStock() {
             <div style="font-size:13px;color:var(--text)">${s.variete} — ${s.type_pot}</div>
             <div style="font-size:11px;color:var(--text-dim)">${s.contenance} ml</div>
           </div>
-          <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--gold-light)">${s.qte} <span style="font-size:12px;color:var(--text-dim)">pots</span></span>
+          <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--gold-light)">${s.qte}</span>
         </div>
       `).join('') : '<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Stock vide</div></div>'}
     </div>
@@ -2307,7 +3008,7 @@ function renderStock() {
           </select>
         </div>
         <div class="form-group">
-          <label class="field-label">Type pot</label>
+          <label class="field-label">Conditionnement</label>
           <select id="f-stock-pot">
             ${getListes().type_pot.map(v=>`<option>${v}</option>`).join('')}
           </select>
@@ -2315,7 +3016,7 @@ function renderStock() {
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="field-label">Contenance (ml)</label>
+          <label class="field-label">Contenance</label>
           <input type="number" id="f-stock-ml" placeholder="500">
         </div>
         <div class="form-group">
@@ -2606,6 +3307,7 @@ const LISTES_DEFAULT = {
   type_action:     ['Remérage','Division','Essaimage','Orpheline','Transhumance','Achat essaim hiverné','Essaim récupéré (du rucher)','Implentation reine','Marquage de la reine','Visite avec BG','Cadre à mâles','Cadre à mâles (Ajout)','Cadre à mâles (Retrait)','1 cadre','2 cadres','3 cadres','Ajout 1 cadre couvain (division)','Ajout 3 cadres couvain (division)','Ajout 1 cadre bouffe (division)','Retrait 1 cadre couvain (divison)','Retrait 3 cadres couvain (Division)','Retrait 1 cadre bouffe (division)','Retraiit 1 cadre (serrage)','1 cadre (desserrage)','Mise en place portes anti-frelons','Retrait de la porte'],
   variete_miel:    ['Toutes fleurs','Châtaigner','Bonbons','Hydromel'],
   type_pot:        ['Verre','Sachet 170 g','75 Cl Verre'],
+  hausse_ref:      ['H01','H02','H03','H04','H05','H06','H07','H08'],
 };
 const LISTES_KEY = 'ruches_listes';
 
@@ -2621,7 +3323,8 @@ function renderParamListes() {
     type_nourriture: 'Types de nourriture',
     type_action:     'Actions rucher',
     variete_miel:    'Variétés de miel',
-    type_pot:        'Types de pots',
+    type_pot:        'Conditionnements',
+    hausse_ref:      'Références hausses',
   };
   return Object.entries(LABELS).map(([key, label]) => {
     const values = listes[key] || [];
@@ -2630,9 +3333,17 @@ function renderParamListes() {
       <div class="param-card-title">${label} <span style="font-weight:400;color:var(--text-muted)">(${values.length})</span></div>
       <div style="margin-bottom:10px">
         ${values.map((v, i) => `
-          <div class="param-row">
-            <span class="param-row-label">${v}</span>
-            <button onclick="removeListeVal('${key}',${i})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0 4px" title="Supprimer">×</button>
+          <div class="param-row" id="liste-row-${key}-${i}">
+            <input type="text"
+              id="liste-edit-${key}-${i}"
+              value="${v.replace(/"/g,'&quot;')}"
+              style="flex:1;font-size:13px;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);padding:2px 4px;outline:none;min-width:0"
+              onfocus="this.style.borderBottomColor='var(--gold)'"
+              onblur="this.style.borderBottomColor='transparent';editListeVal('${key}',${i},this.value)"
+              onkeydown="if(event.key==='Enter'){this.blur();}if(event.key==='Escape'){this.value='${v.replace(/'/g,"\\'").replace(/"/g,'&quot;')}';this.blur();}">
+            <button onclick="removeListeVal('${key}',${i})"
+              style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0 6px;flex-shrink:0"
+              title="Supprimer">×</button>
           </div>
         `).join('')}
       </div>
@@ -2643,6 +3354,18 @@ function renderParamListes() {
       </div>
     </div>`;
   }).join('');
+}
+
+function editListeVal(key, idx, newVal) {
+  newVal = newVal.trim();
+  const listes = getListes();
+  const oldVal = listes[key][idx];
+  if (!newVal) { toast('La valeur ne peut pas être vide', 'err'); renderParametrage(); return; }
+  if (newVal === oldVal) return; // rien changé
+  if (listes[key].includes(newVal)) { toast('Valeur déjà présente', 'err'); renderParametrage(); return; }
+  listes[key][idx] = newVal;
+  saveListes(listes);
+  toast(`"${oldVal}" → "${newVal}"`, 'ok');
 }
 
 function addListeVal(key) {
@@ -2809,11 +3532,12 @@ function importData(input) {
 }
 
 function clearCache() {
-  if (!confirm('Vider le cache local ? Les données Supabase restent intactes.')) return;
-  localStorage.removeItem('ruches_cache');
-  localStorage.removeItem('ruches_cache_ts');
-  toast('Cache vidé', 'ok');
-  loadData(true);
+  showConfirm('Vider le cache local ? Les données Supabase restent intactes.', () => {
+    localStorage.removeItem('ruches_cache');
+    localStorage.removeItem('ruches_cache_ts');
+    toast('Cache vidé', 'ok');
+    loadData(true);
+  }, 'Vider', true);
 }
 
 // ============================================================
@@ -2882,6 +3606,8 @@ function renderColonieDetail(colonieId) {
     .sort((a,b) => new Date(b.date_comptage) - new Date(a.date_comptage)).slice(0, 5);
   const occupations = DB.occupations.filter(o => o.colonie_id === colonieId)
     .sort((a,b) => new Date(b.date_debut) - new Date(a.date_debut));
+  const actionsColonie = DB.actions.filter(a => a.colonie_id === colonieId)
+    .sort((a,b) => new Date(b.semaine) - new Date(a.semaine)).slice(0, 8);
 
   el.innerHTML = `
     <!-- Bandeau colonie -->
@@ -2899,18 +3625,29 @@ function renderColonieDetail(colonieId) {
     <div class="fiche-section">
       <div class="fiche-section-title">Informations</div>
       <div class="fiche-card">
-        ${ruche ? `
-          <div class="historique-item">
+        <div class="historique-item">
             <div class="historique-label">Ruche actuelle</div>
             <div style="text-align:right">
-              <div class="historique-val" style="font-size:14px;cursor:pointer" onclick="navigate('ruche-detail','${ruche.nom}',true,'${ruche.id}')">${ruche.id} — ${ruche.nom}</div>
-              ${occ?.date_debut ? `<div class="historique-date">depuis ${fmtDate(occ.date_debut)}</div>` : ''}
+              ${ruche ? `
+                <div class="historique-val" style="font-size:14px;cursor:pointer" onclick="navigate('ruche-detail','${ruche.nom}',true,'${ruche.id}')">${ruche.id} — ${ruche.nom}</div>
+                ${occ?.date_debut ? `<div class="historique-date">depuis ${fmtDate(occ.date_debut)}</div>` : ''}
+              ` : `<div style="color:var(--text-muted);font-size:12px">Sans ruche</div>`}
             </div>
-          </div>` : `
-          <div class="historique-item">
-            <div class="historique-label">Ruche</div>
-            <div style="color:var(--text-muted);font-size:12px">Sans ruche</div>
-          </div>`}
+          </div>
+          ${colonieActive(c) ? `
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-soft)">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Déplacer vers une autre ruche</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="changer-ruche-select" style="flex:1;font-size:12px">
+                <option value="">— Choisir une ruche —</option>
+                ${DB.ruches.filter(r => r.actif !== false && (!occ || r.id !== occ.ruche_id)).map(r => {
+                  const libre = !DB.occupation_courante.find(o => o.ruche_id === r.id);
+                  return `<option value="${r.id}" ${!libre ? 'style="color:var(--text-muted)"' : ''}>${r.id} — ${r.nom}${!libre ? ' (occupée)' : ''}</option>`;
+                }).join('')}
+              </select>
+              <button class="btn btn-primary" style="font-size:12px;padding:7px 12px;white-space:nowrap" onclick="changerRuche('${c.id}')">Déplacer</button>
+            </div>
+          </div>` : ''}
         ${c.gentillesse != null ? `
           <div class="historique-item">
             <div class="historique-label">Gentillesse</div>
@@ -2959,6 +3696,25 @@ function renderColonieDetail(colonieId) {
       </div>
     </div>` : ''}
 
+    <!-- Actions -->
+    ${actionsColonie.length ? `
+    <div class="fiche-section" style="padding-top:0">
+      <div class="fiche-section-title">Actions rucher</div>
+      <div class="fiche-card">
+        ${actionsColonie.map(a => `
+          <div class="historique-item">
+            <div class="historique-label">🫱 ${a.action}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="historique-date">${fmtDate(a.semaine)}</div>
+              <button onclick="deleteAction('${a.id}','colonie-detail','${colonieId}')"
+                style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:2px 0;line-height:1"
+                title="Supprimer">🗑️</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+
     <!-- Varroa -->
     ${varroas.length ? `
     <div class="fiche-section" style="padding-top:0">
@@ -2997,8 +3753,7 @@ async function cloturerColonie(colonieId) {
   if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
   const dateFin = document.getElementById('cloture-date')?.value;
   if (!dateFin) { toast('Date de fin requise', 'err'); return; }
-  if (!confirm(`Clôturer cette colonie au ${dateFin} ? Cette action est irréversible.`)) return;
-
+  showConfirm(`Clôturer cette colonie au ${dateFin} ? Cette action est irréversible.`, async () => {
   try {
     // Mettre à jour colonies.date_fin
     const r1 = await fetch(`${cfg.url}/rest/v1/colonies?id=eq.${colonieId}`, {
@@ -3020,6 +3775,43 @@ async function cloturerColonie(colonieId) {
     }
 
     toast('Colonie clôturée');
+    await loadData(true);
+    renderColonieDetail(colonieId);
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'err');
+  }
+  });
+}
+
+async function changerRuche(colonieId) {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
+  const nouvelleRucheId = document.getElementById('changer-ruche-select')?.value;
+  if (!nouvelleRucheId) { toast('Choisissez une ruche', 'err'); return; }
+
+  const today = todayISO();
+  const occ = DB.occupation_courante.find(o => o.colonie_id === colonieId);
+
+  try {
+    // 1. Fermer l'occupation courante si elle existe
+    if (occ) {
+      const r1 = await fetch(`${cfg.url}/rest/v1/occupations?colonie_id=eq.${colonieId}&date_fin=is.null`, {
+        method: 'PATCH',
+        headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ date_fin: today })
+      });
+      if (!r1.ok) throw new Error(await r1.text());
+    }
+
+    // 2. Créer la nouvelle occupation
+    const r2 = await fetch(`${cfg.url}/rest/v1/occupations`, {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ id: genId(), colonie_id: colonieId, ruche_id: nouvelleRucheId, date_debut: today, date_fin: null })
+    });
+    if (!r2.ok) throw new Error(await r2.text());
+
+    toast('Colonie déplacée ✓', 'ok');
     await loadData(true);
     renderColonieDetail(colonieId);
   } catch(e) {
@@ -3068,6 +3860,53 @@ async function saveDateCadreMales(rucheId) {
     });
     if (!r.ok) throw new Error(await r.text());
     ruche.date_cadre_males = date;
+    saveCache();
+    renderRucheDetail(rucheId);
+    toast('Date enregistrée', 'ok');
+  } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+}
+
+async function toggleRemerageDiv(rucheId) {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) return;
+  const ruche = DB.ruches.find(r => r.id === rucheId);
+  if (!ruche) return;
+  const newVal = !ruche.remerage_division;
+  try {
+    const r = await fetch(`${cfg.url}/rest/v1/ruches?id=eq.${rucheId}`, {
+      method: 'PATCH',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ remerage_division: newVal })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    ruche.remerage_division = newVal;
+    const dateUpdate = newVal ? todayISO() : null;
+    const r2 = await fetch(`${cfg.url}/rest/v1/ruches?id=eq.${rucheId}`, {
+      method: 'PATCH',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ date_remerage_division: dateUpdate })
+    });
+    if (r2.ok) ruche.date_remerage_division = dateUpdate;
+    saveCache();
+    renderRucheDetail(rucheId);
+    toast(newVal ? 'Remérage/Division activé' : 'Remérage/Division désactivé', 'ok');
+  } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+}
+
+async function saveDateRemerageDiv(rucheId) {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) return;
+  const ruche = DB.ruches.find(r => r.id === rucheId);
+  if (!ruche) return;
+  const date = document.getElementById('date-remerage-div')?.value || null;
+  try {
+    const r = await fetch(`${cfg.url}/rest/v1/ruches?id=eq.${rucheId}`, {
+      method: 'PATCH',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ date_remerage_division: date })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    ruche.date_remerage_division = date;
     saveCache();
     renderRucheDetail(rucheId);
     toast('Date enregistrée', 'ok');
@@ -3259,7 +4098,7 @@ function renderRucheDetail(rucheId) {
           <span class="icon">💊</span><span class="label">Soigner</span>
         </button>
         <button class="action-rapide-btn" onclick="navigateAction('actions','${ruche.id}')">
-          <span class="icon">🔧</span><span class="label">Action</span>
+          <span class="icon">🫱</span><span class="label">Action</span>
         </button>
         <button class="action-rapide-btn" onclick="navigateAction('varroa','${ruche.id}')">
           <span class="icon">🔬</span><span class="label">Varroa</span>
@@ -3336,14 +4175,14 @@ function renderRucheDetail(rucheId) {
           const diff = ruche.date_cadre_males ? Math.floor((new Date() - new Date(ruche.date_cadre_males)) / 86400000) : 0;
           const alerte = ruche.cadre_males && diff > 14;
           const btnStyle = alerte
-            ? 'background:#a03030;border-color:#a03030;color:white;'
+            ? 'background:#3a8a3a;border-color:#3a8a3a;color:white;'
             : ruche.cadre_males
-              ? 'background:#3a8a3a;border-color:#3a8a3a;color:white;'
+              ? 'background:#a03030;border-color:#a03030;color:white;'
               : 'background:transparent;border-color:var(--border);color:var(--text-dim);';
           const nbJours = ruche.date_cadre_males
             ? (diff > 14
-              ? `<span class="date-alerte">${diff}j</span>`
-              : `<span style="font-size:11px;color:var(--text-muted)">${diff}j</span>`)
+              ? `<span style="font-size:11px;font-weight:600;color:#7ab85a">${diff}j ✓</span>`
+              : `<span style="font-size:11px;font-weight:600;color:#c04040">${diff}j</span>`)
             : '';
           return `
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -3355,6 +4194,41 @@ function renderRucheDetail(rucheId) {
             ${nbJours}
             <input type="date" id="date-cadre-males" value="${ruche.date_cadre_males || ''}"
               onchange="saveDateCadreMales('${ruche.id}')"
+              style="font-size:12px;flex:1;min-width:130px">
+          </div>`;
+        })()}
+      </div>
+    </div>
+
+    <!-- Remérage / Division -->
+    <div class="fiche-section" style="padding-top:0">
+      <div class="fiche-card">
+        ${(() => {
+          const diff = ruche.date_remerage_division ? Math.floor((new Date() - new Date(ruche.date_remerage_division)) / 86400000) : 0;
+          const actif = !!ruche.remerage_division;
+          const btnStyle = actif
+            ? (diff >= 28
+              ? 'background:#3a8a3a;border-color:#3a8a3a;color:white;'
+              : diff >= 15
+                ? 'background:#b87020;border-color:#b87020;color:white;'
+                : 'background:#a03030;border-color:#a03030;color:white;')
+            : 'background:transparent;border-color:var(--border);color:var(--text-dim);';
+          const nbJours = actif && ruche.date_remerage_division
+            ? (diff >= 28
+              ? `<span style="font-size:11px;font-weight:600;color:#7ab85a">${diff}j ✓</span>`
+              : diff >= 15
+                ? `<span style="font-size:11px;font-weight:600;color:#e08020">${diff}j</span>`
+                : `<span style="font-size:11px;font-weight:600;color:#c04040">${diff}j</span>`)
+            : '';
+          return `
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button onclick="toggleRemerageDiv('${ruche.id}')"
+              style="padding:7px 16px;border-radius:20px;border:1px solid;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;${btnStyle}">
+              👑 Remérage/Division ${actif ? '· Actif' : '· Inactif'}
+            </button>
+            ${nbJours}
+            <input type="date" id="date-remerage-div" value="${ruche.date_remerage_division || ''}"
+              onchange="saveDateRemerageDiv('${ruche.id}')"
               style="font-size:12px;flex:1;min-width:130px">
           </div>`;
         })()}
@@ -3476,8 +4350,13 @@ function renderRucheDetail(rucheId) {
       <div class="fiche-card">
         ${actionsRuche.map(a => `
           <div class="historique-item">
-            <div class="historique-label">🔧 ${a.action}</div>
-            <div class="historique-date">${fmtDate(a.semaine)}</div>
+            <div class="historique-label">🫱 ${a.action}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="historique-date">${fmtDate(a.semaine)}</div>
+              <button onclick="deleteAction('${a.id}','ruche-detail','${rucheId}')"
+                style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:2px 0;line-height:1"
+                title="Supprimer">🗑️</button>
+            </div>
           </div>
         `).join('')}
       </div>
@@ -3568,6 +4447,22 @@ function fmtDate(d) {
     const dt = new Date(d);
     return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
   } catch { return d; }
+}
+
+function showConfirm(message, onOk, labelOk = 'Confirmer', danger = true) {
+  const overlay = document.getElementById('confirm-overlay');
+  document.getElementById('confirm-message').textContent = message;
+  const btnOk = document.getElementById('confirm-ok');
+  const btnCancel = document.getElementById('confirm-cancel');
+  btnOk.textContent = labelOk;
+  btnOk.style.background = danger ? '#a03030' : 'var(--gold)';
+  btnOk.style.borderColor = danger ? '#a03030' : 'var(--gold)';
+  btnOk.style.color = 'white';
+  overlay.style.display = 'flex';
+  const close = () => { overlay.style.display = 'none'; };
+  btnOk.onclick = () => { close(); onOk(); };
+  btnCancel.onclick = close;
+  overlay.onclick = (e) => { if (e.target === overlay) close(); };
 }
 
 function toast(msg, type = '') {
