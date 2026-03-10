@@ -2,7 +2,7 @@
 
 > Application de gestion apicole — **Principauté de Cordemais**
 
-[![version](https://img.shields.io/badge/version-2.1.0-c8a84b?style=flat-square)](https://robeenwind007.github.io/Apiruche/)
+[![version](https://img.shields.io/badge/version-2.3.0-c8a84b?style=flat-square)](https://robeenwind007.github.io/Apiruche/)
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-live-brightgreen?style=flat-square)](https://robeenwind007.github.io/Apiruche/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square)](https://supabase.com)
 
@@ -44,10 +44,10 @@ Apiruche/
 ### 🏡 Rucher
 | Écran | Description |
 |-------|-------------|
-| **Ruches** | Liste des ruches avec état colonie, poids/cadres, badges alertes |
-| **Colonies** | Gestion des colonies, génétique, reine, clôture |
+| **Ruches** | Liste des ruches avec état colonie, poids/cadres, badges alertes, badges hausses actives |
+| **Colonies** | Gestion des colonies, génétique, reine, gentillesse (⭐), historique des ruches |
 | **Stock & Vente** | Suivi des stocks de miel, conditionnements, ventes |
-| **Production** | Suivi des hausses à miel — pose, pesée, retrait/récolte |
+| **Production** | Suivi des hausses à miel — pose, pesée, retrait/récolte, historique unifié |
 
 ### ⚙️ Actions rucher
 | Écran | Description |
@@ -66,14 +66,30 @@ Apiruche/
 
 ---
 
-## 🍯 Module Production (v2.1.0)
+## 🍯 Module Production (v2.2.0)
 
 Suivi complet du cycle de la hausse à miel :
 
-1. **Pose de la hausse** → choix ruche (avec colonie liée), référence hausse (H01…H08), poids de référence pré-rempli depuis la dernière pesée
-2. **Suivi en temps réel** → miel estimé calculé automatiquement (dernière pesée − poids de référence)
-3. **Retrait / Récolte** → poids au retrait, calcul du poids de miel, confirmation
-4. **Historique** → total récolté par année + total historique
+1. **Pose de la hausse** → choix ruche (avec colonie liée), référence hausse (H01…H08) — les refs déjà en place sont désactivées
+2. **Plusieurs hausses par ruche** → autorisées, calcul miel corrigé (déduit les retraits antérieurs)
+3. **Suivi en temps réel** → miel estimé = dernière pesée − poids_ref − Σ autres hausses retirées
+4. **Retrait / Récolte** → poids au retrait, calcul automatique du poids de miel, variété, notes
+5. **Historique unifié** → événements POSE (↓ vert) + RETRAIT (↑ doré) en ordre chronologique inversé
+6. **Graphique récolte** → barre par ruche/colonie dans l'écran Récolte Année N
+
+---
+
+## 🔍 Journal des actions (Débogage)
+
+Accessible via **Réglages → 🔍 Journal des actions** :
+
+- Toutes les opérations CREATE / UPDATE / DELETE sont enregistrées localement (`localStorage`)
+- **Stats** en 3 blocs colorés (vert/orange/rouge)
+- **Filtres combinables** : recherche texte libre + type d'action + table
+- **Export CSV** pour analyse externe
+- **Vider** le journal
+
+Tables instrumentées : `pesees`, `nourrissements`, `traitements`, `actions`, `hausses`, `occupations`, `colonies`, `ruches`
 
 ---
 
@@ -125,6 +141,7 @@ CREATE TABLE IF NOT EXISTS hausses (
 
 - **Thème** : sombre noir profond (`#0a0a06`) avec accents dorés (`#c8a84b`)
 - **Polices** : DM Serif Display (titres) · Inter (corps) · Cinzel (splash)
+- **Fond** : motif hexagonal nid d'abeille (`body::after`, opacity .025)
 - **Indicateurs poids/cadre** :
   - 🔴 Rouge : < 2,8 kg/cadre
   - 🟠 Orange : 2,8–3,0 kg/cadre
@@ -151,6 +168,28 @@ Cordemais, 44360 Loire-Atlantique
 ---
 
 ## 📋 Changelog
+
+### v2.3.0
+- ✨ Journal des actions (débogage) : vue dédiée accessible depuis Réglages
+- ✨ Logging complet de toutes les opérations CREATE / UPDATE / DELETE
+- ✨ Table filtrable avec recherche texte, filtre type et filtre table
+- ✨ Stats par type d'action (compteurs colorés)
+- ✨ Export CSV du journal
+- ✨ Suppression des lignes de l'historique des ruches dans la fiche colonie (bouton 🗑)
+- 🔧 Onglet Logs supprimé des Réglages (remplacé par CTA dédié)
+
+### v2.2.0
+- ✨ Badge(s) hausse(s) actives dans le cartouche de chaque ruche (liste et fiche)
+- ✨ Plusieurs hausses par ruche autorisées (avec indicateur dans le select)
+- ✨ Références hausses déjà posées non sélectionnables lors d'une pose
+- ✨ Historique Production unifié poses + retraits avec code couleur ↓/↑
+- ✨ Miel estimé corrigé : déduit les hausses déjà retirées (calcul multi-hausse)
+- ✨ Poids de référence = poids_ref de la première hausse posée sur la ruche
+- ✨ Récolte Année N : fusion DB.recoltes + DB.hausses retirées, graphique barre par ruche/colonie
+- ✨ Formulaire pesée : nb hausses actives pré-rempli + curseur cadres sur dernière valeur
+- ✨ Gentillesse colonie : sélecteur étoiles cliquable (création + édition directe en fiche)
+- 🔧 Suppression du tag "Colonie active" redondant dans la liste ruches
+- 🔧 Formulaire "Nouvelle récolte" supprimé (passage exclusif par Production)
 
 ### v2.1.0
 - ✨ Module Production : gestion complète des hausses à miel
