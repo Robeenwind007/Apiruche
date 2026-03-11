@@ -1092,7 +1092,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.2.0</div>
+  <div class="splash-version">v2.4.0</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1311,7 +1311,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.4.0';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -3776,7 +3776,7 @@ async function testWhatsApp() {
   }
   if (st) { st.textContent = '⏳ Envoi en cours…'; st.style.color = 'var(--text-muted)'; }
   try {
-    await sendWhatsApp('🐝 ApiRuche — Test de notification OK ! Principauté de Cordemais.');
+    await sendWhatsApp('ApiRuche - Test de notification OK ! Principaute de Cordemais.');
     if (st) { st.textContent = '✅ Message envoyé (vérifiez WhatsApp)'; st.style.color = '#7ab85a'; }
   } catch(e) {
     if (st) { st.textContent = '❌ Erreur : ' + e; st.style.color = '#e06060'; }
@@ -3789,12 +3789,14 @@ async function sendWhatsAppAlertes(alertes) {
   if (!alertes.length) return;
 
   const lignes = alertes.map(a => {
-    let txt = a.emoji + ' *' + a.nom + '* — ' + a.action;
-    if (a.label) txt += '\n   ' + a.label;
+    // Normaliser le texte pour éviter les problèmes d'encodage WhatsApp
+    const normalize = s => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : '';
+    let txt = '*' + a.nom + '* - ' + normalize(a.action);
+    if (a.label) txt += '\n   ' + normalize(a.label);
     return txt;
   });
 
-  const msg = '🐝 *ApiRuche — Alertes rucher*\n'
+  const msg = '*ApiRuche - Alertes rucher*\n'
     + new Date().toLocaleDateString('fr-FR', {weekday:'short', day:'2-digit', month:'2-digit'}) + '\n\n'
     + lignes.join('\n\n');
 
