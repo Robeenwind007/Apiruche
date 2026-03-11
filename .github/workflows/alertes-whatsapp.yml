@@ -1,0 +1,31 @@
+name: Alertes rucher WhatsApp
+
+on:
+  schedule:
+    # Tous les jours à midi (heure Paris = UTC+1 en hiver, UTC+2 en été)
+    # UTC 11:00 = midi en heure d'hiver (CET)
+    # UTC 10:00 = midi en heure d'été (CEST)
+    # On utilise 11:00 UTC — fonctionne en heure d'hiver, 13h en été
+    - cron: '0 11 * * *'
+  workflow_dispatch:   # Permet un déclenchement manuel depuis GitHub
+
+jobs:
+  alertes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lancer le script d'alertes
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          WA_PHONE:     ${{ secrets.WA_PHONE }}
+          WA_APIKEY:    ${{ secrets.WA_APIKEY }}
+        run: node cron-alertes.js
