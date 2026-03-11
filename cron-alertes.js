@@ -47,7 +47,7 @@ async function main() {
   const [ruches, occupations, pesees, hausses] = await Promise.all([
     sb('ruches', 'actif=neq.false&select=id,nom,cadre_males,date_cadre_males,remerage_division,date_remerage_division'),
     sb('occupations', 'date_fin=is.null&select=ruche_id,colonie_id'),
-    sb('pesees', 'select=id,ruche_id,semaine,pesee,nb_cadres,nb_hausse&order=semaine.desc&limit=200'),
+    sb('pesees', 'select=id,ruche_id,semaine,pesee,demi_pesee,nb_cadres,nb_hausse&order=semaine.desc&limit=200'),
     sb('hausses', 'date_retrait=is.null&select=id,ruche_id,hausse_ref,date_pose,poids_ref'),
   ]);
 
@@ -93,7 +93,7 @@ async function main() {
         .sort((a, b) => new Date(b.semaine) - new Date(a.semaine));
       if (pRuche.length) {
         const p      = pRuche[0];
-        const poids  = parseFloat(p.pesee);
+        const poids  = p.pesee != null ? parseFloat(p.pesee) : parseFloat(p.demi_pesee) * 2;
         const cadres = p.nb_cadres || 0;
         if (!isNaN(poids) && poids >= 32 && cadres >= 8) {
           alertes.push({
