@@ -1092,7 +1092,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.4.0</div>
+  <div class="splash-version">v2.4.1</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1311,7 +1311,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.4.0';
+const APP_VERSION = '2.4.1';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -1969,27 +1969,28 @@ function renderDashboard() {
 // ============================================================
 // FORMULAIRES DE SAISIE
 // ============================================================
-function rucheOptions() {
-  return DB.ruches
+function rucheOptions(withEmpty = false) {
+  const opts = DB.ruches
     .filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id))
     .sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric: true}))
     .map(r => `<option value="${r.id}" data-photo="${ruchePhotoUrl(r) || ''}">${r.id} — ${r.nom}</option>`).join('');
+  return withEmpty ? `<option value="">— Choisir une ruche —</option>` + opts : opts;
 }
 
 // Crée un select ruche avec miniature
-function rucheSelectHtml(id, onchange = '') {
+function rucheSelectHtml(id, onchange = '', withEmpty = false) {
   const ruches = DB.ruches
     .filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id))
     .sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric: true}));
-  const first = ruches[0];
+  const first = withEmpty ? null : ruches[0];
   const thumbUrl = first ? (ruchePhotoUrl(first) || '') : '';
   return `
     <div class="select-ruche-wrap">
       <div class="select-thumb" id="thumb-${id}">
         ${thumbUrl ? `<img src="${thumbUrl}" alt="">` : '🐝'}
       </div>
-      <select id="${id}" onchange="${onchange ? onchange+';' : ''}updateRucheThumb('${id}');updatePeseeRuchePhoto()">
-        ${rucheOptions()}
+      <select id="${id}" onchange="${onchange ? onchange+';' : ''}updateRucheThumb('${id}')">
+        ${rucheOptions(withEmpty)}
       </select>
     </div>`;
 }
@@ -2027,7 +2028,7 @@ function renderPesee() {
       <div class="form-row">
         <div class="form-group">
           <label class="field-label">Ruche</label>
-          ${rucheSelectHtml('f-pesee-ruche', "updateColonieSelect('pesee')")}
+          ${rucheSelectHtml('f-pesee-ruche', "updateColonieSelect('pesee')", true)}
         </div>
         <div class="form-group">
           <label class="field-label">Date</label>
@@ -2037,7 +2038,7 @@ function renderPesee() {
       <div class="form-row">
         <div class="form-group">
           <label class="field-label">Demi-pesée (kg)</label>
-          <input type="number" id="f-pesee-demi" placeholder="ex: 12.5" step="0.1" min="0">
+          <input type="number" id="f-pesee-demi" placeholder="ex: 12.5" step="0.1" min="0" inputmode="decimal">
         </div>
         <div class="form-group">
           <label class="field-label">Nb cadres — <span id="f-pesee-cadres-val" style="color:var(--gold-light);font-weight:600">8</span></label>
@@ -2099,9 +2100,9 @@ function updateCalcPesee() {
 
 function updatePeseeRuchePhoto() {
   const rucheId = document.getElementById('f-pesee-ruche')?.value;
-  if (!rucheId) return;
-  const ruche = DB.ruches.find(r => r.id === rucheId);
   const photoEl = document.getElementById('pesee-ruche-photo');
+  if (!rucheId) { if (photoEl) photoEl.style.display = 'none'; return; }
+  const ruche = DB.ruches.find(r => r.id === rucheId);
   const imgEl   = document.getElementById('pesee-ruche-photo-img');
   const nomEl   = document.getElementById('pesee-ruche-photo-nom');
   if (!ruche) { photoEl.style.display = 'none'; return; }
@@ -2122,12 +2123,16 @@ function updatePeseeRuchePhoto() {
 
   // Pré-positionner le curseur Nb cadres sur la valeur de la dernière pesée
   const dernPesee = dernierePesee(rucheId);
+  const cadresInput = document.getElementById('f-pesee-cadres');
+  const cadresVal   = document.getElementById('f-pesee-cadres-val');
   if (dernPesee?.nb_cadres) {
-    const cadresInput = document.getElementById('f-pesee-cadres');
-    const cadresVal   = document.getElementById('f-pesee-cadres-val');
     if (cadresInput) { cadresInput.value = dernPesee.nb_cadres; }
     if (cadresVal)   { cadresVal.textContent = dernPesee.nb_cadres; }
+  } else {
+    if (cadresInput) { cadresInput.value = 8; }
+    if (cadresVal)   { cadresVal.textContent = '8'; }
   }
+  updateCalcPesee();
 
   const url = ruchePhotoUrl(ruche);
   if (url) {
