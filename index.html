@@ -1092,7 +1092,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.4.1</div>
+  <div class="splash-version">v2.4.2</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1311,7 +1311,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.4.1';
+const APP_VERSION = '2.4.2';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -2245,8 +2245,6 @@ function renderNourrir() {
 
   const listEl = document.getElementById('nourrir-ruches-list');
   ruchesActives.forEach(r => {
-    const col = DB.occupation_courante.find(o => o.ruche_id === r.id);
-    const colNom = col ? (col.colonie_nom || 'Colonie') : 'Sans colonie';
     const card = document.createElement('div');
     card.dataset.ruche = r.id;
     card.dataset.selected = '0';
@@ -2256,8 +2254,8 @@ function renderNourrir() {
     ico.style.cssText = 'width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s';
     const info = document.createElement('div');
     info.style.minWidth = '0';
-    info.innerHTML = '<div style="font-weight:600;color:var(--text)">' + r.id + '</div>'
-      + '<div style="font-size:10px">' + colNom + '</div>';
+    info.innerHTML = '<div style="font-weight:600;color:var(--text)">' + r.nom + '</div>'
+      + '<div style="font-size:10px;color:var(--text-dim)">' + r.id + '</div>';
     card.appendChild(ico);
     card.appendChild(info);
     card.addEventListener('click', function() {
@@ -2354,8 +2352,6 @@ function renderSoigner() {
 
   const listEl = document.getElementById('soigner-ruches-list');
   ruchesActives.forEach(r => {
-    const col = DB.occupation_courante.find(o => o.ruche_id === r.id);
-    const colNom = col ? (col.colonie_nom || 'Colonie') : 'Sans colonie';
     const card = document.createElement('div');
     card.dataset.ruche = r.id;
     card.dataset.selected = '0';
@@ -2365,8 +2361,8 @@ function renderSoigner() {
     ico.style.cssText = 'width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s';
     const info = document.createElement('div');
     info.style.minWidth = '0';
-    info.innerHTML = '<div style="font-weight:600;color:var(--text)">' + r.id + '</div>'
-      + '<div style="font-size:10px">' + colNom + '</div>';
+    info.innerHTML = '<div style="font-weight:600;color:var(--text)">' + r.nom + '</div>'
+      + '<div style="font-size:10px;color:var(--text-dim)">' + r.id + '</div>';
     card.appendChild(ico);
     card.appendChild(info);
     card.addEventListener('click', function() {
@@ -2903,8 +2899,8 @@ function renderActionsScreen() {
 
     const info = document.createElement('div');
     info.style.minWidth = '0';
-    info.innerHTML = '<div style="font-weight:600;color:var(--text)">' + r.id + '</div>'
-      + '<div style="font-size:10px">' + r.nom + '</div>';
+    info.innerHTML = '<div style="font-weight:600;color:var(--text)">' + r.nom + '</div>'
+      + '<div style="font-size:10px;color:var(--text-dim)">' + r.id + '</div>';
 
     card.appendChild(ico);
     card.appendChild(info);
