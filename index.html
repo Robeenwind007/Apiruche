@@ -1092,7 +1092,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.4.2</div>
+  <div class="splash-version">v2.4.3</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1309,9 +1309,69 @@ select option { background: var(--bg2); color: var(--cream); }
   <div id="cfg-status" style="margin-top:10px;font-size:12px;color:var(--text-dim)"></div>
 </div>
 
+
+<!-- ===== SHEET EDITION ACHAT ===== -->
+<div class="sheet-overlay" id="achat-edit-overlay" onclick="closeAchatEdit()"></div>
+<div class="sheet" id="achat-edit-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" style="margin-bottom:16px">Modifier l'achat</div>
+  <input type="hidden" id="edit-achat-id">
+  <div class="form-row">
+    <div class="form-group">
+      <label class="field-label">Date</label>
+      <input type="date" id="edit-achat-date">
+    </div>
+    <div class="form-group">
+      <label class="field-label">Fournisseur</label>
+      <input type="text" id="edit-achat-fourn" list="fournisseurs-list-edit" placeholder="Mat-Api, Cobee...">
+      <datalist id="fournisseurs-list-edit">
+        <option>Mat-Api</option><option>Cobee</option><option>Lozachmeur</option>
+        <option>Pinson</option><option>L'atelier</option><option>Divers</option>
+      </datalist>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="field-label">Type</label>
+      <select id="edit-achat-type">
+        <option>Mat&eacute;riel ruches</option><option>Cadres</option><option>Hausses</option>
+        <option>Nourriture abeilles</option><option>Candy</option><option>Sirop</option>
+        <option>Traitement varroa</option><option>Pots et capsules</option><option>Etiquettes</option>
+        <option>Reine</option><option>Essaim Hivern&eacute;</option><option>Appat Frelon</option><option>Divers</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="field-label">Montant TTC (&euro;)</label>
+      <input type="number" id="edit-achat-montant" step="0.01" min="0">
+    </div>
+  </div>
+  <div style="margin-bottom:14px">
+    <label class="field-label">Facture PDF</label>
+    <div id="edit-facture-current" style="margin-top:6px"></div>
+    <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 12px;
+      border-radius:var(--radius-sm);border:1px dashed var(--border);
+      cursor:pointer;font-size:12px;color:var(--text-dim)">
+      &#128206; Remplacer le PDF
+      <input type="file" id="edit-facture-input" accept="application/pdf"
+        style="display:none" onchange="onEditFactureSelected(this)">
+    </label>
+    <div id="edit-facture-status" style="margin-top:4px;font-size:11px;color:var(--text-muted)"></div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:10px">
+    <button class="btn btn-primary" style="flex:1" onclick="updateAchat()">&#128190; Enregistrer</button>
+    <button class="btn btn-secondary" style="flex:1" onclick="closeAchatEdit()">Annuler</button>
+  </div>
+  <button onclick="deleteAchat()"
+    style="width:100%;padding:10px;background:rgba(160,48,48,.12);
+    border:1px solid rgba(160,48,48,.3);border-radius:var(--radius-sm);
+    color:#e06060;font-size:13px;font-weight:600;cursor:pointer">
+    &#128465; Supprimer cet achat
+  </button>
+</div>
+
 <script>
 
-const APP_VERSION = '2.4.2';
+const APP_VERSION = '2.4.3';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -3487,6 +3547,8 @@ async function saveStock() {
 }
 
 // --- ACHATS ---
+let _achatFactureFile = null; // fichier PDF sélectionné en attente
+
 function renderAchats() {
   const el = document.getElementById('content-achats');
   const totalAnnee = DB.achats.filter(a => a.date && a.date.startsWith(new Date().getFullYear()))
@@ -3522,6 +3584,17 @@ function renderAchats() {
           <input type="number" id="f-achats-montant" placeholder="0.00" step="0.01" min="0">
         </div>
       </div>
+      <!-- Zone facture PDF -->
+      <div style="margin-bottom:12px">
+        <label class="field-label">Facture PDF <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
+        <div id="facture-drop-zone" onclick="document.getElementById('facture-file-input').click()"
+          style="border:2px dashed var(--border);border-radius:var(--radius);padding:14px 12px;text-align:center;cursor:pointer;transition:all var(--transition);margin-top:4px">
+          <div id="facture-drop-icon" style="font-size:24px;margin-bottom:4px">📄</div>
+          <div id="facture-drop-label" style="font-size:12px;color:var(--text-dim)">Appuyer pour sélectionner un PDF</div>
+          <input type="file" id="facture-file-input" accept="application/pdf" style="display:none" onchange="onFactureSelected(this)">
+        </div>
+        <div id="facture-status-new" style="margin-top:6px;font-size:11px;color:var(--text-muted)"></div>
+      </div>
       <button class="btn btn-primary btn-full" onclick="saveAchat()">💾 Enregistrer</button>
     </div>
     <div class="form-card">
@@ -3529,19 +3602,88 @@ function renderAchats() {
         <div class="form-title" style="margin-bottom:0">Dépenses ${new Date().getFullYear()}</div>
         <span style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--gold-light)">${totalAnnee} €</span>
       </div>
-      ${DB.achats.slice(0,8).map(a => `
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-soft)">
-          <div>
-            <div style="font-size:12px;color:var(--text)">${a.fournisseur || '—'} · ${a.type_achat || '—'}</div>
+      ${DB.achats.length === 0 ? '<div class="empty" style="padding:24px 0"><div class="empty-icon" style="font-size:28px">🛍️</div><div class="empty-text">Aucun achat enregistré</div></div>' : ''}
+      ${DB.achats.slice(0,20).map(a => {
+        const factureUrl = achatFactureUrl(a);
+        return `
+        <div onclick="openAchatEdit('${a.id}')"
+          style="display:flex;align-items:center;gap:10px;padding:9px 0;
+                 border-bottom:1px solid var(--border-soft);cursor:pointer;
+                 transition:background .15s;-webkit-tap-highlight-color:transparent"
+          onmouseover="this.style.background='rgba(200,168,75,.04)'"
+          onmouseout="this.style.background=''">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.fournisseur || '—'} · ${a.type_achat || '—'}</div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:1px">${fmtDate(a.date)}</div>
           </div>
-          <div style="text-align:right">
-            <div style="font-size:13px;color:var(--gold-light)">${parseFloat(a.montant_ttc||0).toFixed(2)} €</div>
-            <div style="font-size:10px;color:var(--text-dim)">${fmtDate(a.date)}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
+            ${factureUrl
+              ? `<a href="${factureUrl}" target="_blank" title="Ouvrir la facture"
+                  style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:8px;
+                         background:rgba(200,168,75,.1);border:1px solid rgba(200,168,75,.25);
+                         color:var(--gold);font-size:11px;font-weight:600;text-decoration:none;cursor:pointer">
+                  📄 Facture
+                </a>`
+              : ''
+            }
+            <div style="text-align:right">
+              <div style="font-size:13px;color:var(--gold-light)">${parseFloat(a.montant_ttc||0).toFixed(2)} €</div>
+            </div>
+            <div style="color:var(--text-muted);font-size:18px;line-height:1">›</div>
           </div>
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     </div>
   `;
+  // Remettre à zéro le fichier sélectionné
+  _achatFactureFile = null;
+}
+
+function achatFactureUrl(achat) {
+  if (!achat.facture_url) return null;
+  if (achat.facture_url.startsWith('http')) return achat.facture_url;
+  const cfg = getConfig();
+  return `${cfg.url}/storage/v1/object/public/achats-factures/${achat.facture_url}`;
+}
+
+function onFactureSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  _achatFactureFile = file;
+  const zone  = document.getElementById('facture-drop-zone');
+  const icon  = document.getElementById('facture-drop-icon');
+  const label = document.getElementById('facture-drop-label');
+  zone.style.borderColor  = 'var(--gold)';
+  zone.style.background   = 'rgba(200,168,75,.06)';
+  icon.textContent  = '✅';
+  label.textContent = file.name;
+  label.style.color = 'var(--gold-light)';
+  document.getElementById('facture-status-new').textContent = `${(file.size/1024).toFixed(0)} Ko prêt à l'envoi`;
+}
+
+async function uploadFacturePDF(file, achatId) {
+  const cfg = getConfig();
+  const ext  = file.name.split('.').pop().toLowerCase() || 'pdf';
+  const fileName = `${achatId}.${ext}`;
+  const r = await fetch(`${cfg.url}/storage/v1/object/achats-factures/${fileName}`, {
+    method: 'POST',
+    headers: {
+      apikey: cfg.key,
+      Authorization: `Bearer ${cfg.key}`,
+      'Content-Type': 'application/pdf',
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    const msg = e.message || `Storage ${r.status}`;
+    if (r.status === 404 || msg.toLowerCase().includes('not found')) {
+      throw new Error('Bucket "achats-factures" introuvable — créez-le dans Supabase Dashboard → Storage → New bucket → nom "achats-factures", public ✅');
+    }
+    throw new Error(msg);
+  }
+  return fileName;
 }
 
 async function saveAchat() {
@@ -3555,8 +3697,171 @@ async function saveAchat() {
     montant_ttc: parseFloat(document.getElementById('f-achats-montant')?.value) || null
   };
   if (!record.date) { toast('Date obligatoire', 'err'); return; }
+
+  // Upload facture si présente
+  if (_achatFactureFile) {
+    document.getElementById('facture-status-new').textContent = '⏳ Upload facture…';
+    try {
+      record.facture_url = await uploadFacturePDF(_achatFactureFile, record.id);
+    } catch(e) {
+      toast(`Facture : ${e.message}`, 'err');
+      document.getElementById('facture-status-new').textContent = `❌ ${e.message}`;
+      return;
+    }
+  }
+
   await saveRecord('achats', record, 'Achat enregistré ✓');
   renderAchats();
+}
+
+async function uploadFactureExistant(input, achatId) {
+  const file = input.files[0];
+  if (!file) return;
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
+  toast('⏳ Upload facture…', 'ok');
+  try {
+    const fileName = await uploadFacturePDF(file, achatId);
+    // Patch la table achats
+    const r2 = await fetch(`${cfg.url}/rest/v1/achats?id=eq.${achatId}`, {
+      method: 'PATCH',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ facture_url: fileName })
+    });
+    if (!r2.ok) throw new Error('Mise à jour achat échouée');
+    // Mettre à jour le cache local
+    const achat = DB.achats.find(a => a.id === achatId);
+    if (achat) achat.facture_url = fileName;
+    saveCache();
+    toast('Facture enregistrée ✓', 'ok');
+    addLog('CREATE', 'achats', `Facture jointe : ${achatId}`);
+    renderAchats();
+  } catch(e) {
+    toast(`Erreur : ${e.message}`, 'err');
+  }
+}
+
+
+// ============================================================
+// ACHATS — EDITION / SUPPRESSION
+// ============================================================
+let _editAchatFactureFile = null;
+
+function openAchatEdit(achatId) {
+  const a = DB.achats.find(x => x.id === achatId);
+  if (!a) return;
+  _editAchatFactureFile = null;
+  document.getElementById('edit-achat-id').value      = a.id;
+  document.getElementById('edit-achat-date').value    = a.date || '';
+  document.getElementById('edit-achat-fourn').value   = a.fournisseur || '';
+  document.getElementById('edit-achat-montant').value = a.montant_ttc || '';
+  document.getElementById('edit-facture-status').textContent = '';
+
+  // Selectionner le bon type
+  const sel = document.getElementById('edit-achat-type');
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].text === a.type_achat) { sel.selectedIndex = i; break; }
+  }
+
+  // Afficher la facture existante
+  const factureEl = document.getElementById('edit-facture-current');
+  const url = achatFactureUrl(a);
+  if (url) {
+    factureEl.innerHTML = `<a href="${url}" target="_blank"
+      style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;
+             border-radius:8px;background:rgba(200,168,75,.1);border:1px solid rgba(200,168,75,.25);
+             color:var(--gold);font-size:12px;text-decoration:none">
+      &#128196; Voir la facture actuelle
+    </a>`;
+  } else {
+    factureEl.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">Aucune facture</span>';
+  }
+
+  document.getElementById('edit-facture-input').value = '';
+  document.getElementById('achat-edit-overlay').classList.add('open');
+  document.getElementById('achat-edit-sheet').classList.add('open');
+}
+
+function closeAchatEdit() {
+  document.getElementById('achat-edit-overlay').classList.remove('open');
+  document.getElementById('achat-edit-sheet').classList.remove('open');
+  _editAchatFactureFile = null;
+}
+
+function onEditFactureSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  _editAchatFactureFile = file;
+  document.getElementById('edit-facture-status').textContent =
+    file.name + ' (' + (file.size/1024).toFixed(0) + ' Ko)';
+  document.getElementById('edit-facture-status').style.color = 'var(--gold-light)';
+}
+
+async function updateAchat() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
+  const id         = document.getElementById('edit-achat-id').value;
+  const date       = document.getElementById('edit-achat-date').value;
+  const fournisseur = document.getElementById('edit-achat-fourn').value || null;
+  const type_achat = document.getElementById('edit-achat-type').value;
+  const montant_ttc = parseFloat(document.getElementById('edit-achat-montant').value) || null;
+  if (!date) { toast('Date obligatoire', 'err'); return; }
+
+  const patch = { date, fournisseur, type_achat, montant_ttc };
+
+  // Upload nouvelle facture si presente
+  if (_editAchatFactureFile) {
+    document.getElementById('edit-facture-status').textContent = 'Upload en cours...';
+    try {
+      patch.facture_url = await uploadFacturePDF(_editAchatFactureFile, id);
+    } catch(e) {
+      toast('Facture : ' + e.message, 'err');
+      document.getElementById('edit-facture-status').textContent = e.message;
+      document.getElementById('edit-facture-status').style.color = '#e06060';
+      return;
+    }
+  }
+
+  try {
+    const r = await fetch(`${cfg.url}/rest/v1/achats?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`,
+                 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(patch)
+    });
+    if (!r.ok) throw new Error((await r.json()).message || r.status);
+    // Mettre a jour le cache
+    const a = DB.achats.find(x => x.id === id);
+    if (a) Object.assign(a, patch);
+    saveCache();
+    toast('Achat modifie', 'ok');
+    addLog('UPDATE', 'achats', id);
+    closeAchatEdit();
+    renderAchats();
+  } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+}
+
+function deleteAchat() {
+  const id = document.getElementById('edit-achat-id').value;
+  const a  = DB.achats.find(x => x.id === id);
+  const label = a ? (a.fournisseur || a.type_achat || 'cet achat') : 'cet achat';
+  showConfirm('Supprimer ' + label + ' ?', async () => {
+    const cfg = getConfig();
+    if (!cfg.url || !cfg.key) return;
+    try {
+      const r = await fetch(`${cfg.url}/rest/v1/achats?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, Prefer: 'return=minimal' }
+      });
+      if (!r.ok) throw new Error((await r.json()).message || r.status);
+      DB.achats = DB.achats.filter(x => x.id !== id);
+      saveCache();
+      toast('Achat supprime', 'ok');
+      addLog('DELETE', 'achats', id);
+      closeAchatEdit();
+      renderAchats();
+    } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+  }, 'Supprimer');
 }
 
 
