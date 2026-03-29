@@ -40,6 +40,117 @@
   --transition:  .2s cubic-bezier(.4,0,.2,1);
 }
 
+/* ============================================================
+   THEME CLAIR
+   ============================================================ */
+body.light {
+  --bg:          #f5f0e8;
+  --bg2:         #ede6d6;
+  --bg3:         #e4dbc8;
+  --card:        #faf7f0;
+  --card-hover:  #f2ead8;
+  --border:      rgba(160,120,40,.22);
+  --border-soft: rgba(160,120,40,.10);
+  --gold:        #9a6f1a;
+  --gold-light:  #7a5510;
+  --gold-dim:    #c4993a;
+  --cream:       #3a2a0a;
+  --text:        #2e2010;
+  --text-dim:    #7a6040;
+  --text-muted:  #a89060;
+  --green:       #3a7020;
+  --green-light: #4a8c28;
+  --red:         #b03030;
+  --shadow:      0 2px 16px rgba(100,70,20,.15);
+}
+
+body.light::before {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(200,168,75,.08) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+}
+
+body.light #header {
+  background: rgba(237,230,214,.92);
+  border-bottom-color: rgba(160,120,40,.18);
+}
+
+body.light #nav {
+  background: rgba(229,220,200,.96);
+  border-top-color: rgba(160,120,40,.18);
+}
+
+body.light .settings-sheet,
+body.light .sheet {
+  background: var(--bg2);
+}
+
+body.light input,
+body.light select,
+body.light textarea {
+  background: #fff;
+  border-color: rgba(160,120,40,.25);
+  color: var(--text);
+}
+
+body.light input::placeholder,
+body.light select::placeholder {
+  color: var(--text-muted);
+}
+
+body.light .btn-secondary {
+  background: rgba(160,120,40,.1);
+  border-color: rgba(160,120,40,.25);
+  color: var(--text-dim);
+}
+
+body.light .btn-secondary:hover {
+  background: rgba(160,120,40,.18);
+}
+
+body.light .splash-cta {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+body.light .alerte-banner,
+body.light #alerte-banner {
+  background: #fdf5e0;
+  border-bottom-color: var(--gold);
+}
+
+body.light .param-tab {
+  color: var(--text-muted);
+}
+body.light .param-tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+body.light .toggle-btn.on  { background: var(--green-light); }
+body.light .toggle-btn.off { background: rgba(160,120,40,.2); }
+
+body.light .nav-item { color: var(--text-muted); }
+body.light .nav-item.active { color: var(--gold); }
+
+/* Splash en mode clair */
+body.light #splash {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(154,111,26,.1) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
+}
+body.light .splash-glow {
+  background: radial-gradient(circle, rgba(154,111,26,.1) 0%, transparent 70%);
+}
+body.light .splash-stat-tile {
+  background: rgba(154,111,26,.08);
+  border-color: rgba(154,111,26,.2);
+}
+body.light .splash-logo-wrap {
+  filter: drop-shadow(0 0 18px rgba(154,111,26,.4));
+}
+
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
@@ -1064,7 +1175,7 @@ select option { background: var(--bg2); color: var(--cream); }
 }
 .splash-cta:hover {
   background: var(--gold);
-  color: #0a0a06;
+  color: var(--bg);
   box-shadow: 0 0 24px rgba(200,168,75,.35);
   transform: translateY(-1px);
 }
@@ -1076,7 +1187,8 @@ select option { background: var(--bg2); color: var(--cream); }
 .splash-cta:hover .splash-cta-arrow { transform: translateX(4px); }
 .splash-version {
   font-size: 10px; letter-spacing: .15em;
-  color: rgba(200,168,75,.3);
+  color: var(--gold-dim);
+  opacity: .5;
   margin-top: 6px;
   font-family: 'Inter', sans-serif;
 }
@@ -1097,7 +1209,7 @@ select option { background: var(--bg2); color: var(--cream); }
   font-size: 22px; font-weight: 600;
   color: var(--gold); line-height: 1;
 }
-.splash-stat-val.green { color: #7ab85a; }
+.splash-stat-val.green { color: var(--green-light); }
 .splash-stat-lbl {
   font-size: 9px; letter-spacing: .12em;
   text-transform: uppercase; color: var(--text-muted);
@@ -1563,7 +1675,7 @@ function checkAlertesDemarrage() {
   banner.appendChild(closeBtn);
   Object.assign(banner.style, {
     position: 'fixed', top: '0', left: '0', right: '0', zIndex: '10000',
-    background: '#1a1206', borderBottom: '2px solid #c8a84b',
+    background: getComputedStyle(document.body).getPropertyValue('--bg2').trim() || '#1a1206', borderBottom: '2px solid ' + (getComputedStyle(document.body).getPropertyValue('--gold').trim() || '#c8a84b') + ',',
     padding: '14px 16px', boxShadow: '0 4px 24px rgba(0,0,0,.6)',
     animation: 'toastIn .3s ease'
   });
@@ -4198,7 +4310,35 @@ function renderParametrage() {
       </div>
       <button class="btn btn-secondary btn-full" style="margin-top:4px;font-size:13px;padding:12px;letter-spacing:.03em" onclick="navigate('logs')">🔍 Journal des actions (Débogage)</button>
     </div>
+
+    <!-- THEME -->
+    <div class="param-section" style="display:block" id="ptab-theme">
+      <div class="param-card">
+        <div class="param-card-title">🌟 Apparence</div>
+        <div class="param-row" style="padding:14px 0">
+          <div>
+            <div class="param-row-label">Mode d'affichage</div>
+            <div class="param-row-sub" id="theme-label">Mode sombre</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:16px">🌙</span>
+            <div id="theme-toggle-btn" onclick="toggleTheme()"
+              style="width:52px;height:28px;border-radius:14px;cursor:pointer;
+                     position:relative;transition:background .3s;
+                     background:rgba(200,168,75,.2);border:1px solid rgba(200,168,75,.3)">
+              <div id="theme-toggle-knob"
+                style="position:absolute;top:3px;left:3px;width:20px;height:20px;
+                       border-radius:50%;background:var(--gold);
+                       transition:transform .3s,background .3s;
+                       box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>
+            </div>
+            <span style="font-size:16px">☀️</span>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
+  updateThemeToggleUI();
 }
 
 // Listes stockées dans localStorage pour personnalisation
@@ -4297,6 +4437,39 @@ function removeListeVal(key, idx) {
   _paramTab = 'listes';
   renderParametrage();
   toast(`"${val}" supprimé`, 'ok');
+}
+
+
+// ============================================================
+// THEME CLAIR / SOMBRE
+// ============================================================
+const THEME_KEY = 'ruches_theme';
+
+function applyTheme(theme) {
+  if (theme === 'light') {
+    document.body.classList.add('light');
+  } else {
+    document.body.classList.remove('light');
+  }
+  localStorage.setItem(THEME_KEY, theme);
+  updateThemeToggleUI();
+}
+
+function toggleTheme() {
+  const current = localStorage.getItem(THEME_KEY) || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+function updateThemeToggleUI() {
+  const theme = localStorage.getItem(THEME_KEY) || 'dark';
+  const isLight = theme === 'light';
+  const btn   = document.getElementById('theme-toggle-btn');
+  const knob  = document.getElementById('theme-toggle-knob');
+  const label = document.getElementById('theme-label');
+  if (btn)  btn.style.background  = isLight ? 'rgba(154,111,26,.25)' : 'rgba(200,168,75,.2)';
+  if (knob) knob.style.transform  = isLight ? 'translateX(24px)' : 'translateX(0)';
+  if (knob) knob.style.background = isLight ? '#9a6f1a' : 'var(--gold)';
+  if (label) label.textContent    = isLight ? 'Mode clair' : 'Mode sombre';
 }
 
 function switchParamTab(tab) {
@@ -5837,6 +6010,7 @@ async function uploadPhoto() {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+  applyTheme(localStorage.getItem('ruches_theme') || 'dark');
   renderMenu();
   loadData();
 });
