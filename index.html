@@ -150,6 +150,16 @@ body.light .splash-logo-wrap {
   filter: drop-shadow(0 0 18px rgba(154,111,26,.4));
 }
 
+/* Tuiles menu en mode clair : fond fonce, texte clair */
+body.light .menu-tile {
+  background: #3a2e1a;
+  border-color: rgba(200,168,75,.25);
+}
+body.light .menu-tile:hover { background: #4a3c22; border-color: rgba(200,168,75,.5); }
+body.light .menu-tile-icon  { color: var(--gold-dim); }
+body.light .menu-tile-label { color: #e8dcc0; }
+body.light .menu-section-title { color: var(--gold-dim); }
+
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -341,8 +351,8 @@ body::after {
 }
 
 .menu-tile {
-  background: var(--card);
-  border: 1px solid var(--border-soft);
+  background: var(--bg3);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0;
   display: flex; flex-direction: column;
@@ -364,17 +374,18 @@ body::after {
 .menu-tile::before {
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 50% 0%, rgba(200,168,75,.08) 0%, transparent 70%);
+  background: radial-gradient(ellipse at 50% 0%, rgba(200,168,75,.12) 0%, transparent 70%);
   opacity: 0; transition: opacity var(--transition);
 }
 
-.menu-tile:hover { border-color: var(--border); background: var(--card-hover); }
+.menu-tile:hover { border-color: var(--gold-dim); background: var(--card); }
 .menu-tile:hover::before { opacity: 1; }
 .menu-tile:active { transform: scale(.97); }
 
 .menu-tile-icon {
   font-size: 20px; line-height: 1; margin-bottom: 3px;
-  filter: drop-shadow(0 0 6px rgba(200,168,75,.2));
+  color: var(--gold);
+  filter: drop-shadow(0 0 6px rgba(200,168,75,.3));
 }
 
 @media (min-width: 601px) {
@@ -382,8 +393,8 @@ body::after {
 }
 
 .menu-tile-label {
-  font-size: 9px; font-weight: 500; letter-spacing: .04em;
-  color: var(--text); text-align: center;
+  font-size: 9px; font-weight: 600; letter-spacing: .04em;
+  color: var(--cream); text-align: center;
 }
 
 @media (min-width: 601px) {
@@ -5029,7 +5040,7 @@ function renderColonies() {
         <div class="colonie-card ${colonieActive(c) ? '' : 'ruche-inactive'}" onclick="navigate('colonie-detail','${c.nom}',true,'${c.id}')">
           <div class="colonie-avatar" style="background:${bg}">${initiale}</div>
           <div class="colonie-info">
-            <div class="colonie-info-nom" style="display:flex;align-items:center;gap:6px">${c.nom || '—'}${c.couleur_reine ? `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:${bg};flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.25)" title="${c.couleur_reine}${c.marquee ? ' \u2713 marqu�e' : ''}">${c.marquee ? '<svg width="8" height="8" viewBox="0 0 8 8" style="position:absolute"><polyline points="1.5,4 3.2,6 6.5,2" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span>` : ''}</div>
+            <div class="colonie-info-nom" style="display:flex;align-items:center;gap:6px">${c.nom || '—'}${c.couleur_reine ? `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:${bg};flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.25)" title="${c.couleur_reine}${c.marquee ? ' \u2713 marqu�e' : ''}">${c.marquee ? '<svg width="8" height="8" viewBox="0 0 8 8" style="position:absolute"><polyline points="1.5,4 3.2,6 6.5,2" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span>` : ''}</div>
             <div class="colonie-info-meta">
               ${ruche ? `<span class="colonie-ruche-badge">${ruche.id} — ${ruche.nom}</span>` : '<span class="colonie-sans-ruche">Sans ruche</span>'}
               ${c.genetique ? `<span class="tag tag-muted">${c.genetique}</span>` : ''}
@@ -6316,4 +6327,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 </body>
-</html>
+</html
