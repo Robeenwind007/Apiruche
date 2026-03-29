@@ -316,28 +316,28 @@ body::after {
    MENU PRINCIPAL
    ============================================================ */
 #screen-menu {
-  padding: 16px;
+  padding: 12px;
 }
 
 .menu-section {
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 }
 
 .menu-section-title {
-  font-size: 9px; font-weight: 600; letter-spacing: .18em;
-  text-transform: uppercase; color: var(--text-muted);
+  font-size: 10px; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--gold-light);
   margin-bottom: 10px; padding-left: 2px;
 }
 
 /* Desktop : grille 4 colonnes / Mobile : 2 colonnes */
 .menu-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
 }
 
 @media (max-width: 600px) {
-  .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .menu-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
 }
 
 .menu-tile {
@@ -352,12 +352,13 @@ body::after {
   position: relative;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
-  aspect-ratio: 1;
+  aspect-ratio: unset;
+  height: 72px;
 }
 
 /* Desktop : hauteur fixe plutôt qu'aspect-ratio carré */
 @media (min-width: 601px) {
-  .menu-tile { aspect-ratio: unset; height: 90px; }
+  .menu-tile { height: 56px; }
 }
 
 .menu-tile::before {
@@ -372,21 +373,21 @@ body::after {
 .menu-tile:active { transform: scale(.97); }
 
 .menu-tile-icon {
-  font-size: 28px; line-height: 1; margin-bottom: 8px;
-  filter: drop-shadow(0 0 8px rgba(200,168,75,.2));
+  font-size: 20px; line-height: 1; margin-bottom: 3px;
+  filter: drop-shadow(0 0 6px rgba(200,168,75,.2));
 }
 
 @media (min-width: 601px) {
-  .menu-tile-icon { font-size: 22px; margin-bottom: 5px; }
+  .menu-tile-icon { font-size: 16px; margin-bottom: 2px; }
 }
 
 .menu-tile-label {
-  font-size: 11px; font-weight: 500; letter-spacing: .04em;
+  font-size: 9px; font-weight: 500; letter-spacing: .04em;
   color: var(--text); text-align: center;
 }
 
 @media (min-width: 601px) {
-  .menu-tile-label { font-size: 11px; }
+  .menu-tile-label { font-size: 9px; }
 }
 
 .menu-tile-badge {
@@ -1407,21 +1408,21 @@ select option { background: var(--bg2); color: var(--cream); }
   <!-- NAV BAS -->
   <nav id="nav">
     <button class="nav-item active" data-nav="menu" onclick="navigate('menu')">
-      <span class="nav-icon">🏠</span>
+      <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 9L10 3l7 6v8a1 1 0 01-1 1H13v-4H7v4H4a1 1 0 01-1-1V9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
       <span class="nav-label">Menu</span>
     </button>
 
     <button class="nav-item" data-nav="dashboard" onclick="navigate('dashboard')">
-      <span class="nav-icon">📊</span>
+      <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.9"/><rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.6"/><rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.6"/><rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.35"/></svg></span>
       <span class="nav-label">Tableau<br>de bord</span>
     </button>
     <button class="nav-item" data-nav="recolte" onclick="navigate('recolte')">
-      <span class="nav-icon">🍯</span>
+      <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3c0 0-5 3.5-5 7.5a5 5 0 0010 0C15 6.5 10 3 10 3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 3v10" stroke="currentColor" stroke-width="1" opacity="0.45" stroke-dasharray="1.5 1.5"/></svg></span>
       <span class="nav-label">Récolte<br>Année N</span>
     </button>
 
     <button class="nav-item" data-nav="parametrage" onclick="navigate('parametrage')">
-      <span class="nav-icon">⚙️</span>
+      <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
   </nav>
@@ -1546,6 +1547,64 @@ select option { background: var(--bg2); color: var(--cream); }
     border:1px solid rgba(160,48,48,.3);border-radius:var(--radius-sm);
     color:#e06060;font-size:13px;font-weight:600;cursor:pointer">
     &#128465; Supprimer cet achat
+  </button>
+</div>
+
+
+<!-- ===== SHEET EDITION PESEE ===== -->
+<div class="sheet-overlay" id="pesee-edit-overlay" onclick="closePeseeEdit()"></div>
+<div class="sheet" id="pesee-edit-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" style="margin-bottom:16px">&#x2696;&#xFE0F; Modifier la pes&#xE9;e</div>
+  <input type="hidden" id="edit-pesee-id">
+  <input type="hidden" id="edit-pesee-ruche-id">
+  <div class="form-row">
+    <div class="form-group">
+      <label class="field-label">Date</label>
+      <input type="date" id="edit-pesee-date">
+    </div>
+    <div class="form-group">
+      <label class="field-label">Demi-pes&#xE9;e (kg)</label>
+      <input type="number" id="edit-pesee-demi" step="0.1" min="0" inputmode="decimal" placeholder="ex: 12.5">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="field-label">Nb cadres — <span id="edit-pesee-cadres-val" style="color:var(--gold-light);font-weight:600">8</span></label>
+      <input type="range" id="edit-pesee-cadres" min="4" max="10" value="8" step="1"
+        oninput="document.getElementById('edit-pesee-cadres-val').textContent=this.value"
+        style="width:100%;accent-color:var(--gold)">
+      <div style="position:relative;margin-top:2px;padding:0 1px">
+  <div style="display:flex;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:6px;background:var(--border)"></div><span style="font-size:9px;color:var(--text-muted)">4</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:4px;background:var(--border-soft)"></div><span style="font-size:9px;color:transparent">.</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:6px;background:var(--border)"></div><span style="font-size:9px;color:var(--text-muted)">6</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:4px;background:var(--border-soft)"></div><span style="font-size:9px;color:transparent">.</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:6px;background:var(--border)"></div><span style="font-size:9px;color:var(--text-muted)">8</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:4px;background:var(--border-soft)"></div><span style="font-size:9px;color:transparent">.</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:6px;background:var(--border)"></div><span style="font-size:9px;color:var(--text-muted)">10</span></div>
+  </div>
+</div>
+    </div>
+    <div class="form-group">
+      <label class="field-label">Hausses</label>
+      <input type="number" id="edit-pesee-hausse" min="0" max="5" value="0">
+    </div>
+  </div>
+  <div id="edit-pesee-calcul" style="background:rgba(200,168,75,.06);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px">
+    <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Calculs</div>
+    <div style="display:flex;gap:16px">
+      <span style="font-size:13px;color:var(--text)">Pes&#xE9;e totale&#xA0;: <strong id="edit-calc-pesee" style="color:var(--gold-light)">&#x2014;</strong></span>
+      <span style="font-size:13px;color:var(--text)">Ratio&#xA0;: <strong id="edit-calc-ratio" style="color:var(--gold-light)">&#x2014;</strong></span>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:10px">
+    <button class="btn btn-primary" style="flex:1" onclick="updatePesee()">&#x1F4BE; Enregistrer</button>
+    <button class="btn btn-secondary" style="flex:1" onclick="closePeseeEdit()">Annuler</button>
+  </div>
+  <button onclick="deletePeseeFromEdit()"
+    style="width:100%;padding:10px;background:rgba(160,48,48,.12);border:1px solid rgba(160,48,48,.3);border-radius:var(--radius-sm);color:#e06060;font-size:13px;font-weight:600;cursor:pointer">
+    &#x1F5D1;&#xFE0F; Supprimer cette pes&#xE9;e
   </button>
 </div>
 
@@ -1950,27 +2009,27 @@ const MENU_SECTIONS = [
   {
     title: 'Rucher',
     items: [
-      { id: 'ruches',   icon: '🐝',  label: 'Ruches',    screen: 'ruches'   },
-      { id: 'colonies', icon: '👑',  label: 'Colonies',  screen: 'colonies' },
-      { id: 'stock',    icon: '🛒',  label: 'Stock & Vente', screen: 'stock' },
-      { id: 'production', icon: '🍯', label: 'Production',   screen: 'production' },
+      { id: 'ruches',   icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L3 6v8l7 4 7-4V6L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 6l7 4 7-4M10 10v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>`,  label: 'Ruches',    screen: 'ruches'   },
+      { id: 'colonies', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="7" r="1" fill="currentColor" opacity="0.5"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>`,  label: 'Colonies',  screen: 'colonies' },
+      { id: 'stock',    icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="10" width="14" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M6 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="13.5" r="1" fill="currentColor" opacity="0.6"/></svg></span>`,  label: 'Stock & Vente', screen: 'stock' },
+      { id: 'production', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2c0 0-6 4-6 9a6 6 0 0012 0c0-5-6-9-6-9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7.5 13.5c.5-2 1.5-3.5 2.5-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/></svg></span>`, label: 'Production',   screen: 'production' },
     ]
   },
   {
     title: 'Actions rucher',
     items: [
-      { id: 'pesee',   icon: '⚖️',  label: 'Peser',    screen: 'pesee'   },
-      { id: 'nourrir', icon: '🍽️',  label: 'Nourrir',  screen: 'nourrir' },
-      { id: 'soigner', icon: '💊',  label: 'Soigner',  screen: 'soigner' },
-      { id: 'actions', icon: '🫱',  label: 'Actions',  screen: 'actions' },
+      { id: 'pesee',   icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 16h12M7 16l1-4h4l1 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 12V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 6h6M8 6l2-3 2 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`,  label: 'Peser',    screen: 'pesee'   },
+      { id: 'nourrir', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 3v5a5 5 0 005 5 5 5 0 005-5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10 13v4M7 17h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>`,  label: 'Nourrir',  screen: 'nourrir' },
+      { id: 'soigner', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M10 7v6M7 10h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>`,  label: 'Soigner',  screen: 'soigner' },
+      { id: 'actions', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 6h12M4 10h8M4 14h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>`,  label: 'Actions',  screen: 'actions' },
     ]
   },
   {
     title: 'Suivi & Contrôle',
     items: [
-      { id: 'varroa',  icon: '🔬',  label: 'Varroa',   screen: 'varroa'  },
-      { id: 'frelons', icon: '🪲',  label: 'Frelons',  screen: 'frelons' },
-      { id: 'achats',  icon: '🛍️',  label: 'Achats',   screen: 'achats'  },
+      { id: 'varroa',  icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.2" opacity="0.6"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/></svg></span>`,  label: 'Varroa',   screen: 'varroa'  },
+      { id: 'frelons', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4a4 4 0 014 4v1H6V8a4 4 0 014-4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><rect x="6" y="9" width="8" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M4 7l2 3M16 7l-2 3M8 16l-2 2M12 16l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/></svg></span>`,  label: 'Frelons',  screen: 'frelons' },
+      { id: 'achats',  icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 4h2l2.5 8h7L17 7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="16" r="1.2" fill="currentColor" opacity="0.7"/><circle cx="14" cy="16" r="1.2" fill="currentColor" opacity="0.7"/></svg></span>`,  label: 'Achats',   screen: 'achats'  },
     ]
   }
 ];
@@ -2175,7 +2234,7 @@ function renderDashboard() {
   // Stock actuel par variété
   const stockParVariete = {};
   DB.conditionnements.forEach(c => {
-    const v = c.variete || 'Sans variété';
+    const v = c.variete || 'Sans produit';
     stockParVariete[v] = (stockParVariete[v] || 0) + (parseInt(c.quantite) || 0);
   });
   const stockTotal = Object.values(stockParVariete).reduce((s,v) => s+v, 0);
@@ -2195,12 +2254,38 @@ function renderDashboard() {
 
   el.innerHTML = `
     <div class="dash-row">
-      <div class="dash-stat"><div class="dash-stat-val">${nbRuches}</div><div class="dash-stat-lbl">Ruches</div></div>
-      <div class="dash-stat"><div class="dash-stat-val">${nbColonies}</div><div class="dash-stat-lbl">Colonies</div></div>
-      ${nbHausses > 0 ? `<div class="dash-stat">
+      <div class="dash-stat" style="cursor:pointer;position:relative" onclick="this.querySelector('.ruche-detail').style.display=this.querySelector('.ruche-detail').style.display==='none'?'block':'none'">
+        <div class="dash-stat-val">${nbRuches}</div>
+        <div class="dash-stat-lbl">Ruches 🔽</div>
+        <div class="ruche-detail" style="display:none;position:absolute;top:100%;left:0;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 12px;min-width:160px;z-index:10;text-align:left;margin-top:4px">
+          ${DB.ruches.filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id))
+            .sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric:true}))
+            .map(r => `<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--border-soft);color:var(--text);white-space:nowrap">${r.id} — ${r.nom}</div>`).join('')}
+        </div>
+      </div>
+      <div class="dash-stat" style="cursor:pointer;position:relative" onclick="this.querySelector('.colonie-detail').style.display=this.querySelector('.colonie-detail').style.display==='none'?'block':'none'">
+        <div class="dash-stat-val">${nbColonies}</div>
+        <div class="dash-stat-lbl">Colonies 🔽</div>
+        <div class="colonie-detail" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 12px;min-width:200px;z-index:10;text-align:left;margin-top:4px">
+          ${DB.occupation_courante.map(o => {
+            const col = DB.colonies.find(c => c.id === o.colonie_id);
+            const ruc = DB.ruches.find(r => r.id === o.ruche_id);
+            if (!col) return '';
+            return `<div style="display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border-soft);color:var(--text)"><span style="font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${col.nom || col.id}</span><span style="color:var(--text-muted);flex-shrink:0">${ruc ? ruc.id : o.ruche_id}</span></div>`;
+          }).join('')}
+        </div>
+      </div>
+      ${nbHausses > 0 ? `<div class="dash-stat" style="cursor:pointer;position:relative" onclick="this.querySelector('.hausse-detail').style.display=this.querySelector('.hausse-detail').style.display==='none'?'block':'none'">
         <div class="dash-stat-val">${nbHausses} <span style="font-size:14px;color:var(--text-dim)">🍯</span></div>
-        <div class="dash-stat-lbl">Hausse${nbHausses > 1 ? 's' : ''} en place</div>
-        ${mielHausses > 0 ? `<div style="font-size:11px;color:var(--gold);margin-top:2px">~${mielHausses.toFixed(1)} kg estimé</div>` : ''}
+        <div class="dash-stat-lbl">Hausse${nbHausses > 1 ? 's' : ''} 🔽</div>
+        ${mielHausses > 0 ? `<div style="font-size:11px;color:var(--gold);margin-top:2px">~${mielHausses.toFixed(1)} kg</div>` : ''}
+        <div class="hausse-detail" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 12px;min-width:180px;z-index:10;text-align:left;margin-top:4px">
+          ${haussesEnPlace.slice().sort((a,b)=>a.hausse_ref.localeCompare(b.hausse_ref)).map(h => {
+            const rh = DB.ruches.find(r => r.id === h.ruche_id);
+            const jh = Math.floor((new Date() - new Date(h.date_pose)) / 86400000);
+            return `<div style="display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border-soft);color:var(--text)"><span style="font-weight:700;color:var(--gold)">${h.hausse_ref}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${rh ? rh.nom : h.ruche_id}</span><span style="color:var(--text-muted);flex-shrink:0">${jh}j</span></div>`;
+          }).join('')}
+        </div>
       </div>` : ''}
     </div>
     <div class="dash-row">
@@ -2212,8 +2297,50 @@ function renderDashboard() {
           ${stockEntries.length ? stockEntries.map(([v,q]) => `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:2px 0;color:var(--text)"><span>${v}</span><span style="font-weight:600;color:var(--gold)">${q}</span></div>`).join('') : '<div style="font-size:12px;color:var(--text-muted)">Stock vide</div>'}
         </div>
       </div>
-      <div class="dash-stat"><div class="dash-stat-val">${DB.traitements.filter(t => t.date_pose && t.date_pose.startsWith(anneeEnCours)).length}</div><div class="dash-stat-lbl">Traitements ${anneeEnCours}</div></div>
+      ${(() => {
+        const traitAnnee = DB.traitements.filter(t => t.semaine && t.semaine.startsWith(anneeEnCours));
+        const byType = {};
+        traitAnnee.forEach(t => { byType[t.type_traitement || '?'] = (byType[t.type_traitement || '?'] || 0) + 1; });
+        return `<div class="dash-stat" style="cursor:pointer;position:relative" onclick="this.querySelector('.trait-detail').style.display=this.querySelector('.trait-detail').style.display==='none'?'block':'none'">
+          <div class="dash-stat-val">${traitAnnee.length}</div>
+          <div class="dash-stat-lbl">Traitements 🔽</div>
+          <div class="trait-detail" style="display:none;position:absolute;top:100%;right:0;background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 12px;min-width:180px;z-index:10;text-align:left;margin-top:4px">
+            ${Object.entries(byType).length
+              ? Object.entries(byType).map(([v,q]) => `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:2px 0;color:var(--text)"><span>${v}</span><span style="font-weight:600;color:var(--gold)">${q}</span></div>`).join('')
+              : '<div style="font-size:12px;color:var(--text-muted)">Aucun</div>'}
+          </div>
+        </div>`;
+      })()}
     </div>
+
+    ${haussesEnPlace.length > 0 ? `
+    <div class="dash-chart-card">
+      <div class="dash-chart-title">🍯 Hausses en production</div>
+      ${haussesEnPlace.slice().sort((a,b) => a.hausse_ref.localeCompare(b.hausse_ref)).map(h => {
+        const ruche = DB.ruches.find(r => r.id === h.ruche_id);
+        const jours = Math.floor((new Date() - new Date(h.date_pose)) / 86400000);
+        const pesees = DB.pesees.filter(p => p.ruche_id === h.ruche_id && p.semaine >= h.date_pose)
+          .sort((a,b) => new Date(b.semaine) - new Date(a.semaine));
+        const dernPoids = pesees.length ? parseFloat(calculerPesee(pesees[0])) : null;
+        const autresR = (DB.hausses||[])
+          .filter(x => x.id !== h.id && x.ruche_id === h.ruche_id && x.date_retrait && x.date_retrait >= h.date_pose && x.poids_miel)
+          .reduce((s,x) => s + parseFloat(x.poids_miel), 0);
+        const miel = (dernPoids !== null && h.poids_ref) ? Math.max(0, dernPoids - parseFloat(h.poids_ref) - autresR) : null;
+        const cm = miel===null?'var(--text-muted)':miel>=5?'var(--green-light)':miel>=2?'#e08020':'var(--text-muted)';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-soft);cursor:pointer" onclick="navigate(\'production\')">'
+          + '<div style="display:flex;align-items:center;gap:10px">'
+          + '<span style="padding:3px 9px;border-radius:5px;background:var(--gold);color:var(--bg);font-size:11px;font-weight:800">🍯 ' + h.hausse_ref + '</span>'
+          + '<div>'
+          + '<div style="font-size:12px;font-weight:600;color:var(--text)">' + (ruche ? ruche.id + ' — ' + ruche.nom : h.ruche_id) + '</div>'
+          + '<div style="font-size:10px;color:var(--text-muted)">Posée le ' + fmtDate(h.date_pose) + ' · ' + jours + 'j</div>'
+          + '</div></div>'
+          + '<div style="text-align:right;flex-shrink:0">'
+          + (miel !== null
+            ? '<div style="font-family:\'DM Serif Display\',serif;font-size:17px;font-weight:600;color:' + cm + '">' + miel.toFixed(1) + ' <span style="font-size:10px">kg</span></div><div style="font-size:10px;color:var(--text-muted)">estimé</div>'
+            : '<div style="font-size:11px;color:var(--text-muted)">Pas de pesée</div>')
+          + '</div></div>';
+      }).join('')}
+    </div>` : ''}
 
     ${hasAlertes ? `
     <div class="dash-chart-card">
@@ -2350,7 +2477,17 @@ function renderPesee() {
           <input type="range" id="f-pesee-cadres" min="4" max="10" value="8" step="1"
             oninput="document.getElementById('f-pesee-cadres-val').textContent=this.value;updateCalcPesee()"
             style="width:100%;accent-color:var(--gold)">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:2px"><span>4</span><span>10</span></div>
+          <div style="position:relative;margin-top:2px;padding:0 1px">
+  <div style="display:flex;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:6px;background:var(--border)"></div><span style="font-size:9px;color:var(--text-muted)">4</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:4px;background:var(--border-soft)"></div><span style="font-size:9px;color:transparent">.</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:6px;background:var(--border)"></div><span style="font-size:9px;color:var(--text-muted)">6</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:4px;background:var(--border-soft)"></div><span style="font-size:9px;color:transparent">.</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:6px;background:var(--border)"></div><span style="font-size:9px;color:var(--text-muted)">8</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:4px;background:var(--border-soft)"></div><span style="font-size:9px;color:transparent">.</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:6px;background:var(--border)"></div><span style="font-size:9px;color:var(--text-muted)">10</span></div>
+  </div>
+</div>
         </div>
       </div>
       <div class="form-row">
@@ -2377,7 +2514,10 @@ function renderPesee() {
         <div id="pesee-ruche-photo-nom" style="margin-top:6px;font-family:'DM Serif Display',serif;font-size:14px;color:var(--text-dim)"></div>
       </div>
     </div>
+    <div id="pesee-historique"></div>
   `;
+  // Historique pesées
+  renderPeseeHistorique();
   // Calcul temps réel
   ['f-pesee-demi','f-pesee-cadres','f-pesee-hausse'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', updateCalcPesee);
@@ -2492,6 +2632,130 @@ async function savePesee() {
   } catch(e) { toast(`Erreur: ${e.message}`, 'err'); }
 }
 
+
+let _peseeHistoriqueLimit = 50;
+
+function renderPeseeHistorique(limit) {
+  if (limit !== undefined) _peseeHistoriqueLimit = limit;
+  const el = document.getElementById('pesee-historique');
+  if (!el) return;
+  const all = DB.pesees.slice().sort((a,b) => new Date(b.semaine) - new Date(a.semaine));
+  const pesees = all.slice(0, _peseeHistoriqueLimit);
+  if (!pesees.length) { el.innerHTML = ''; return; }
+  const hasMore = all.length > _peseeHistoriqueLimit;
+
+  let html = '<div class="form-card"><div class="form-title" style="margin-bottom:10px">&#x23F3; Historique <span style="font-size:11px;color:var(--text-muted);font-family:Inter,sans-serif;font-weight:400">(' + pesees.length + ' / ' + all.length + ')</span></div>';
+  pesees.forEach(p => {
+    const ruche = DB.ruches.find(r => r.id === p.ruche_id);
+    const poids = p.pesee ? parseFloat(p.pesee).toFixed(1) : p.demi_pesee ? (p.demi_pesee * 2).toFixed(1) : '&#x2014;';
+    const ratio = p.ratio ? parseFloat(p.ratio).toFixed(2) : (p.nb_cadres && p.pesee ? (p.pesee / p.nb_cadres).toFixed(2) : null);
+    const colPoids = couleurPoidsCadre(parseFloat(poids), p.nb_cadres);
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-soft)">';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="font-size:12px;font-weight:600;color:var(--text)">' + (ruche ? ruche.id + ' &#x2014; ' + ruche.nom : p.ruche_id) + '</div>';
+    html += '<div style="font-size:10px;color:var(--text-dim);margin-top:1px">' + fmtDate(p.semaine);
+    if (p.nb_cadres) html += ' &middot; ' + p.nb_cadres + ' cadres';
+    if (p.nb_hausse) html += ' &middot; ' + p.nb_hausse + ' hausse' + (p.nb_hausse > 1 ? 's' : '');
+    html += '</div>';
+    if (ratio) html += '<div style="font-size:10px;color:var(--text-muted)">Ratio&nbsp;: ' + ratio + ' kg/cadre</div>';
+    html += '</div>';
+    html += '<div style="text-align:right;flex-shrink:0">';
+    html += '<div style="font-family:\'DM Serif Display\',serif;font-size:17px;font-weight:600;color:' + colPoids + '">' + poids + '<span style="font-size:10px;color:var(--text-muted)"> kg</span></div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:6px;flex-shrink:0">';
+    html += '<button onclick="openPeseeEdit(\'' + p.id + '\')" style="padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--gold);font-size:11px;cursor:pointer">&#x270F;&#xFE0F;</button>';
+    html += '<button onclick="deletePesee(\'' + p.id + '\',\'' + p.ruche_id + '\')" style="padding:5px 10px;border-radius:var(--radius-sm);border:1px solid rgba(160,48,48,.3);background:transparent;color:#e06060;font-size:11px;cursor:pointer">&#x1F5D1;</button>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  if (hasMore) {
+    const more = Math.min(50, all.length - _peseeHistoriqueLimit);
+    html += '<button onclick="renderPeseeHistorique(' + (_peseeHistoriqueLimit + 50) + ')"'
+      + ' style="width:100%;margin-top:10px;padding:10px;background:transparent;'
+      + 'border:1px solid var(--border-soft);border-radius:var(--radius-sm);'
+      + 'color:var(--text-muted);font-size:12px;cursor:pointer;display:flex;'
+      + 'align-items:center;justify-content:center;gap:6px;transition:all var(--transition)"'
+      + ' onmouseover="this.style.borderColor=\'var(--gold)\';this.style.color=\'var(--gold)\'"'
+      + ' onmouseout="this.style.borderColor=\'var(--border-soft)\';this.style.color=\'var(--text-muted)\'">'
+      + '&#x25BC;&nbsp; Afficher ' + more + ' de plus'
+      + '</button>';
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function openPeseeEdit(peseeId) {
+  const p = DB.pesees.find(x => x.id === peseeId);
+  if (!p) return;
+  document.getElementById('edit-pesee-id').value      = p.id;
+  document.getElementById('edit-pesee-ruche-id').value = p.ruche_id;
+  document.getElementById('edit-pesee-date').value    = p.semaine || '';
+  document.getElementById('edit-pesee-demi').value    = p.demi_pesee || '';
+  const cadres = p.nb_cadres || 8;
+  document.getElementById('edit-pesee-cadres').value  = cadres;
+  document.getElementById('edit-pesee-cadres-val').textContent = cadres;
+  document.getElementById('edit-pesee-hausse').value  = p.nb_hausse || 0;
+  updateEditPeseeCalc();
+  document.getElementById('edit-pesee-demi').addEventListener('input', updateEditPeseeCalc);
+  document.getElementById('edit-pesee-cadres').addEventListener('input', updateEditPeseeCalc);
+  document.getElementById('pesee-edit-overlay').classList.add('open');
+  document.getElementById('pesee-edit-sheet').classList.add('open');
+}
+
+function closePeseeEdit() {
+  document.getElementById('pesee-edit-overlay').classList.remove('open');
+  document.getElementById('pesee-edit-sheet').classList.remove('open');
+}
+
+function updateEditPeseeCalc() {
+  const demi   = parseFloat(document.getElementById('edit-pesee-demi')?.value) || 0;
+  const cadres = parseFloat(document.getElementById('edit-pesee-cadres')?.value) || 0;
+  const pesee  = demi > 0 ? (demi * 2).toFixed(2) : '\u2014';
+  const ratio  = demi > 0 && cadres > 0 ? (demi * 2 / cadres).toFixed(2) : '\u2014';
+  const el = document.getElementById('edit-calc-pesee');
+  const el2 = document.getElementById('edit-calc-ratio');
+  if (el)  el.textContent  = demi > 0 ? pesee + ' kg' : '\u2014';
+  if (el2) el2.textContent = ratio;
+}
+
+async function updatePesee() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
+  const id         = document.getElementById('edit-pesee-id').value;
+  const semaine    = document.getElementById('edit-pesee-date').value;
+  const demi_pesee = parseFloat(document.getElementById('edit-pesee-demi').value);
+  const nb_cadres  = parseInt(document.getElementById('edit-pesee-cadres').value) || null;
+  const nb_hausse  = parseInt(document.getElementById('edit-pesee-hausse').value) || 0;
+  if (!semaine || isNaN(demi_pesee)) { toast('Champs obligatoires manquants', 'err'); return; }
+  const pesee = demi_pesee * 2;
+  const ratio = nb_cadres ? +(pesee / nb_cadres).toFixed(4) : null;
+  const patch = { semaine, demi_pesee, pesee, nb_cadres, nb_hausse, ratio };
+  try {
+    const r = await fetch(`${cfg.url}/rest/v1/pesees?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(patch)
+    });
+    if (!r.ok) throw new Error((await r.json()).message || r.status);
+    const p = DB.pesees.find(x => x.id === id);
+    if (p) Object.assign(p, patch);
+    saveCache();
+    toast('Pes\xc3\xa9e modifi\xc3\xa9e \u2713', 'ok');
+    addLog('UPDATE', 'pesees', id);
+    closePeseeEdit();
+    renderPeseeHistorique();
+  } catch(e) { toast('Erreur\u00a0: ' + e.message, 'err'); }
+}
+
+function deletePeseeFromEdit() {
+  const id      = document.getElementById('edit-pesee-id').value;
+  const rucheId = document.getElementById('edit-pesee-ruche-id').value;
+  closePeseeEdit();
+  deletePesee(id, rucheId);
+}
+
 function deletePesee(peseeId, rucheId) {
   showConfirm('Supprimer cette pesée ?', async () => {
     const cfg = getConfig();
@@ -2506,7 +2770,7 @@ function deletePesee(peseeId, rucheId) {
         saveCache();
         toast('Pesée supprimée', 'ok');
         addLog('DELETE', 'pesees', `${rucheId}`);
-        navigate('ruche-detail', rucheId);
+        renderPeseeHistorique();
       } else {
         const e = await r.json();
         toast(`Erreur: ${e.message}`, 'err');
@@ -3018,6 +3282,24 @@ async function savePoseHausse() {
   } catch(e) { toast('Erreur : ' + e.message, 'err'); }
 }
 
+function produitLotLettre(produit) {
+  if (!produit) return 'M';
+  const p = produit.toLowerCase();
+  if (p.includes('hydro')) return 'H';
+  if (p.includes('bonbon')) return 'B';
+  return 'M'; // Toutes fleurs, Châtaignier et autres = Miel
+}
+
+function genNumerotLot(dateRetrait, produit) {
+  const d = dateRetrait ? new Date(dateRetrait) : new Date();
+  const yy = String(d.getFullYear()).slice(-2);
+  const lettre = produitLotLettre(produit);
+  const annee = d.getFullYear().toString();
+  const nbExistants = (DB.hausses || []).filter(h => h.date_retrait && h.date_retrait.startsWith(annee) && h.num_lot).length;
+  const seq = String(nbExistants + 1).padStart(2, '0');
+  return yy + '-' + lettre + '-' + seq;
+}
+
 // --- FORMULAIRE RETRAIT DE HAUSSE ---
 function renderProductionRetrait(hausseId) {
   const el = document.getElementById('content-production');
@@ -3067,19 +3349,37 @@ function renderProductionRetrait(hausseId) {
     + '<div id="retrait-miel-val" style="font-family:DM Serif Display,serif;font-size:28px;font-weight:600;color:var(--gold)">— kg</div>'
     + '</div>'
 
-    + '<div class="form-row full"><div class="form-group"><label class="field-label">Variété de miel</label>'
+    + '<div class="form-row full"><div class="form-group"><label class="field-label">Produit</label>'
     + '<select id="f-retrait-variete"><option value="">— Non définie —</option>'
     + getListes().variete_miel.map(v => '<option' + (h.variete === v ? ' selected' : '') + '>' + v + '</option>').join('')
     + '</select></div></div>'
 
     + '<div class="form-row full"><div class="form-group"><label class="field-label">Notes</label>'
     + '<input type="text" id="f-retrait-notes" placeholder="Qualité, observations..." value="' + (h.notes || '') + '"></div></div>'
-
-    + '<button class="btn btn-primary btn-full" onclick="saveRetraitHausse(\'' + hausseId + '\')">✅ Confirmer la récolte</button>'
+    + '<div class="form-row full"><div class="form-group"><label class="field-label">N° de lot <span style="font-size:10px;color:var(--text-muted);font-weight:400">généré automatiquement</span></label>'    + '<div style="display:flex;gap:8px;align-items:center">'    + '<input type="text" id="f-retrait-lot" readonly style="flex:1;background:rgba(200,168,75,.06);border-color:rgba(200,168,75,.2);color:var(--gold);font-weight:700;letter-spacing:.08em;font-size:15px">'    + '<button type="button" id="btn-regen-lot" style="padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;white-space:nowrap">&#x1F504; Regénérer</button>'    + '</div></div></div>'
++ '<button class="btn btn-primary btn-full" onclick="saveRetraitHausse(\'' + hausseId + '\')">✅ Confirmer la récolte</button>'
     + '</div>';
 
   // Init calcul si poids déjà rempli
   setTimeout(calcMielRetrait, 50);
+  // Init et wire num lot
+  setTimeout(() => {
+    const lotInput = document.getElementById('f-retrait-lot');
+    const dateInput = document.getElementById('f-retrait-date');
+    const regenBtn  = document.getElementById('btn-regen-lot');
+    const getVariete = () => document.getElementById('f-retrait-variete')?.value || '';
+    if (lotInput) lotInput.value = genNumerotLot(dateInput?.value || todayISO(), getVariete());
+    if (regenBtn) regenBtn.onclick = () => {
+      if (lotInput) lotInput.value = genNumerotLot(dateInput?.value || todayISO(), getVariete());
+    };
+    if (dateInput) dateInput.addEventListener('change', () => {
+      if (lotInput) lotInput.value = genNumerotLot(dateInput.value || todayISO(), getVariete());
+    });
+    const varSelect = document.getElementById('f-retrait-variete');
+    if (varSelect) varSelect.addEventListener('change', () => {
+      if (lotInput) lotInput.value = genNumerotLot(dateInput?.value || todayISO(), getVariete());
+    });
+  }, 60);
 }
 
 function calcMielRetrait() {
@@ -3125,7 +3425,8 @@ async function saveRetraitHausse(hausseId) {
     .filter(x => x.id !== h.id && x.ruche_id === h.ruche_id && x.date_retrait && x.date_retrait >= h.date_pose && x.poids_miel)
     .reduce((s, x) => s + parseFloat(x.poids_miel), 0);
   const poids_miel = Math.max(0, poids_retrait - parseFloat(h.poids_ref) - autresRetraitSave);
-  const update = { date_retrait, poids_retrait, poids_miel: parseFloat(poids_miel.toFixed(2)), variete, notes };
+  const num_lot = document.getElementById('f-retrait-lot')?.value || null;
+  const update = { date_retrait, poids_retrait, poids_miel: parseFloat(poids_miel.toFixed(2)), variete, notes, num_lot };
 
   showConfirm('Confirmer la récolte de ' + poids_miel.toFixed(1) + ' kg de miel pour la hausse ' + h.hausse_ref + ' ?', async () => {
     try {
@@ -3138,7 +3439,7 @@ async function saveRetraitHausse(hausseId) {
       Object.assign(h, update);
       saveCache();
       toast('Récolte de ' + poids_miel.toFixed(1) + ' kg enregistrée ✓', 'ok');
-      addLog('UPDATE', 'hausses', `${h.hausse_ref} retirée de ${h.ruche_id} · ${poids_miel.toFixed(1)} kg · ${variete||'variété ?'}`);
+      addLog('UPDATE', 'hausses', `${h.hausse_ref} retirée de ${h.ruche_id} · ${poids_miel.toFixed(1)} kg · ${variete||'produit ?'}`);
       renderProduction();
     } catch(e) { toast('Erreur : ' + e.message, 'err'); }
   });
@@ -3635,7 +3936,7 @@ function renderStock() {
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="field-label">Variété</label>
+          <label class="field-label">Produit</label>
           <select id="f-stock-variete">
             ${getListes().variete_miel.map(v=>`<option>${v}</option>`).join('')}
           </select>
@@ -4368,7 +4669,7 @@ function renderParamListes() {
     type_traitement: 'Types de traitement',
     type_nourriture: 'Types de nourriture',
     type_action:     'Actions rucher',
-    variete_miel:    'Variétés de miel',
+    variete_miel:    'Produits',
     type_pot:        'Conditionnements',
     hausse_ref:      'Références hausses',
   };
@@ -4702,7 +5003,7 @@ function clearCache() {
 // ============================================================
 // COLONIES
 // ============================================================
-const REINE_COLORS = { Verte:'#3a8a3a', Bleue:'#3a6ab0', Jaune:'#b8920a', Rouge:'#a03030', Blanche:'#777' };
+const REINE_COLORS = { Verte:'#3a8a3a', Bleue:'#3a6ab0', Jaune:'#e6db0c', Rouge:'#a03030', Blanche:'#777' };
 
 function renderColonies() {
   const el = document.getElementById('content-colonies');
@@ -4728,11 +5029,10 @@ function renderColonies() {
         <div class="colonie-card ${colonieActive(c) ? '' : 'ruche-inactive'}" onclick="navigate('colonie-detail','${c.nom}',true,'${c.id}')">
           <div class="colonie-avatar" style="background:${bg}">${initiale}</div>
           <div class="colonie-info">
-            <div class="colonie-info-nom">${c.nom || '—'}</div>
+            <div class="colonie-info-nom" style="display:flex;align-items:center;gap:6px">${c.nom || '—'}${c.couleur_reine ? `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:${bg};flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.25)" title="${c.couleur_reine}${c.marquee ? ' \u2713 marqu�e' : ''}">${c.marquee ? '<svg width="8" height="8" viewBox="0 0 8 8" style="position:absolute"><polyline points="1.5,4 3.2,6 6.5,2" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span>` : ''}</div>
             <div class="colonie-info-meta">
-              ${c.genetique ? `<span class="tag tag-muted">${c.genetique}</span>` : ''}
               ${ruche ? `<span class="colonie-ruche-badge">${ruche.id} — ${ruche.nom}</span>` : '<span class="colonie-sans-ruche">Sans ruche</span>'}
-              ${c.couleur_reine ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:8px;font-size:11px;font-weight:600;color:white;background:${bg}">${c.couleur_reine}${c.marquee ? ' ✓' : ''}</span>` : ''}
+              ${c.genetique ? `<span class="tag tag-muted">${c.genetique}</span>` : ''}
             </div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
@@ -5359,7 +5659,7 @@ function renderRucheDetail(rucheId) {
                   display:inline-flex;align-items:center;gap:4px;
                   padding:3px 10px;border-radius:20px;
                   font-size:11px;font-weight:600;color:white;
-                  background:${{ 'Verte':'#3a8a3a','Bleue':'#3a6ab0','Jaune':'#b8920a','Rouge':'#a03030','Blanche':'#777' }[couleurReine] || '#666'}">
+                  background:${{ 'Verte':'#3a8a3a','Bleue':'#3a6ab0','Jaune':'#e6db0c','Rouge':'#a03030','Blanche':'#777' }[couleurReine] || '#666'}">
                   ${couleurReine}
                   ${colonie.marquee ? '<span style="font-size:13px;line-height:1">✓</span>' : ''}
                 </span>` : ''}
