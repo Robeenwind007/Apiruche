@@ -1619,6 +1619,33 @@ select option { background: var(--bg2); color: var(--cream); }
   </button>
 </div>
 
+
+<!-- ===== SHEET NOUVELLE RUCHE ===== -->
+<div class="sheet-overlay" id="ruche-add-overlay" onclick="closeRucheAdd()"></div>
+<div class="sheet" id="ruche-add-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" style="margin-bottom:16px">&#x1F41D; Nouvelle ruche</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="field-label">ID <span style="font-size:10px;color:var(--text-muted)">(ex&nbsp;: R12)</span></label>
+      <input type="text" id="nr-id" placeholder="R12" style="text-transform:uppercase">
+    </div>
+    <div class="form-group">
+      <label class="field-label">Nom</label>
+      <input type="text" id="nr-nom" placeholder="Nom de la ruche">
+    </div>
+  </div>
+  <div class="form-group" style="margin-bottom:14px">
+    <label class="field-label">Type</label>
+    <select id="nr-type">
+      <option>Ruche Dadant 10</option>
+      <option>Ruchette 6</option>
+    </select>
+  </div>
+  <button class="btn btn-primary btn-full" onclick="saveNouvelleRucheFromList()">+ Cr&#xE9;er la ruche</button>
+  <button class="btn btn-secondary btn-full" style="margin-top:8px" onclick="closeRucheAdd()">Annuler</button>
+</div>
+
 <script>
 
 const APP_VERSION = '2.5.0';
@@ -2047,7 +2074,8 @@ const MENU_SECTIONS = [
 
 function renderMenu() {
   const el = document.getElementById('content-menu');
-  el.innerHTML = MENU_SECTIONS.map(section => `
+  // Sections de tuiles
+  const sectionsHtml = MENU_SECTIONS.map(section => `
     <div class="menu-section">
       <div class="menu-section-title">${section.title}</div>
       <div class="menu-grid">
@@ -2060,6 +2088,39 @@ function renderMenu() {
       </div>
     </div>
   `).join('');
+
+  // Stock par produit
+  const stockMap = {};
+  DB.conditionnements.forEach(c => {
+    const k = c.variete || 'Sans produit';
+    stockMap[k] = (stockMap[k] || 0) + (parseInt(c.quantite) || 0);
+  });
+  const stockEntries = Object.entries(stockMap).filter(([,q]) => q > 0).sort((a,b) => b[1] - a[1]);
+  const stockTotal = stockEntries.reduce((s,[,q]) => s + q, 0);
+
+  let stockHtml = '';
+  if (stockTotal > 0) {
+    stockHtml = `
+    <div class="menu-section">
+      <div class="menu-section-title">Stock</div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;cursor:pointer" onclick="navigate('stock')">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:600;color:var(--gold-light)">${stockTotal} <span style="font-size:11px;color:var(--text-muted);font-family:Inter,sans-serif;font-weight:400">pots</span></span>
+          <span style="font-size:10px;color:var(--text-muted)">${stockEntries.length} produit${stockEntries.length > 1 ? 's' : ''}</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${stockEntries.map(([v,q]) => `
+            <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:rgba(200,168,75,.1);border:1px solid rgba(200,168,75,.2);font-size:11px">
+              <span style="font-weight:700;color:var(--gold-light)">${q}</span>
+              <span style="color:var(--text-dim)">${v}</span>
+            </span>
+          `).join('')}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML = sectionsHtml + stockHtml;
 }
 
 // ============================================================
@@ -2111,6 +2172,67 @@ function rucheAvatar(ruche, size = 44) {
 
 let _showToutesRuches = false;
 
+function nextRucheId() {
+  const ids = DB.ruches.map(r => r.id);
+  // Prefixe le plus frequent (ex: 'R')
+  const prefixes = ids.map(id => id.replace(/\d+$/, '')).filter(Boolean);
+  const prefix = prefixes.length
+    ? prefixes.sort((a,b) =>
+        prefixes.filter(p=>p===b).length - prefixes.filter(p=>p===a).length
+      )[0]
+    : 'R';
+  // Plus grand numero pour ce prefixe + 1
+  const nums = ids
+    .filter(id => id.startsWith(prefix))
+    .map(id => parseInt(id.slice(prefix.length)))
+    .filter(n => !isNaN(n));
+  const next = nums.length ? Math.max(...nums) + 1 : 1;
+  return prefix + next;
+}
+
+function openRucheAdd() {
+  document.getElementById('nr-id').value = nextRucheId();
+  document.getElementById('nr-nom').value = '';
+  document.getElementById('nr-type').selectedIndex = 0;
+  document.getElementById('ruche-add-overlay').classList.add('open');
+  document.getElementById('ruche-add-sheet').classList.add('open');
+  setTimeout(() => {
+    const inp = document.getElementById('nr-nom');
+    if (inp) inp.focus();
+  }, 300);
+}
+
+function closeRucheAdd() {
+  document.getElementById('ruche-add-overlay').classList.remove('open');
+  document.getElementById('ruche-add-sheet').classList.remove('open');
+}
+
+async function saveNouvelleRucheFromList() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); return; }
+  const id   = (document.getElementById('nr-id')?.value || '').trim().toUpperCase();
+  const nom  = (document.getElementById('nr-nom')?.value || '').trim();
+  const type = document.getElementById('nr-type')?.value;
+  if (!id || !nom) { toast('ID et nom obligatoires', 'err'); return; }
+  if (DB.ruches.find(r => r.id === id)) { toast('ID déjà utilisé', 'err'); return; }
+  const rucher = DB.ruchers?.[0];
+  try {
+    const r = await fetch(`${cfg.url}/rest/v1/ruches`, {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ id, nom, type_ruche: type, rucher_id: rucher?.id || null, actif: true })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    DB.ruches.push({ id, nom, type_ruche: type, rucher_id: rucher?.id || null, actif: true });
+    saveCache();
+    toast(`Ruche ${id} créée ✓`, 'ok');
+    addLog('CREATE', 'ruches', `${id} — ${nom}`);
+    closeRucheAdd();
+    await loadData(true);
+    renderRuches();
+  } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+}
+
 function toggleFiltreRuches() {
   _showToutesRuches = !_showToutesRuches;
   renderRuches();
@@ -2129,13 +2251,16 @@ function renderRuches() {
   const header = `
     <div style="padding:10px 12px 4px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:11px;color:var(--text-muted)">${nbActives} active(s) · ${toutes.length} total</span>
-      <button onclick="toggleFiltreRuches()" style="
-        padding:5px 14px;border-radius:20px;border:1px solid;font-size:11px;font-weight:600;cursor:pointer;
-        ${_showToutesRuches
-          ? 'background:rgba(200,168,75,.15);border-color:var(--gold);color:var(--gold);'
-          : 'background:transparent;border-color:var(--border);color:var(--text-muted);'}">
-        ${_showToutesRuches ? '🐝 Toutes' : '🐝 Actives'}
-      </button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onclick="toggleFiltreRuches()" style="
+          padding:5px 14px;border-radius:20px;border:1px solid;font-size:11px;font-weight:600;cursor:pointer;
+          ${_showToutesRuches
+            ? 'background:rgba(200,168,75,.15);border-color:var(--gold);color:var(--gold);'
+            : 'background:transparent;border-color:var(--border);color:var(--text-muted);'}">
+          ${_showToutesRuches ? '🐝 Toutes' : '🐝 Actives'}
+        </button>
+        <button onclick="openRucheAdd()" class="btn btn-primary" style="padding:5px 14px;font-size:11px;font-weight:600">+ Nouvelle</button>
+      </div>
     </div>`;
   el.innerHTML = header + liste.map(r => {
     const col = DB.occupation_courante.find(o => o.ruche_id === r.id);
