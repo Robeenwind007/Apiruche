@@ -2105,7 +2105,7 @@ function renderMenu() {
       <div class="menu-section-title">Stock</div>
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;cursor:pointer" onclick="navigate('stock')">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:600;color:var(--gold-light)">${stockTotal} <span style="font-size:11px;color:var(--text-muted);font-family:Inter,sans-serif;font-weight:400">pots</span></span>
+          <span style="font-family:'DM Serif Display',serif;font-size:20px;font-weight:600;color:var(--gold-light)">${stockTotal} <span style="font-size:11px;color:var(--text-muted);font-family:Inter,sans-serif;font-weight:400">produits</span></span>
           <span style="font-size:10px;color:var(--text-muted)">${stockEntries.length} produit${stockEntries.length > 1 ? 's' : ''}</span>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -5210,7 +5210,7 @@ function renderColonieDetail(colonieId) {
       <div style="font-family:'DM Serif Display',serif;font-size:28px;font-weight:700;color:white">${c.nom || '—'}</div>
       <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px">${c.genetique || '—'}</div>
       <div style="position:absolute;top:16px;right:16px;display:flex;gap:8px;align-items:center">
-        ${c.couleur_reine ? `<span style="font-size:12px;font-weight:600;color:white;background:rgba(0,0,0,.25);padding:3px 10px;border-radius:20px">${c.couleur_reine}${c.marquee ? ' ✓' : ''}</span>` : ''}
+        ${c.marquee ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.25);" title="Reine marquée"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9.5 10,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ''}
       </div>
       ${c.date_creation ? `<div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,.55)">Créée le ${fmtDate(c.date_creation)}</div>` : ''}
       ${!colonieActive(c) ? `<div style="margin-top:4px;font-size:11px;color:rgba(255,100,100,.8)">☠️ Terminée le ${fmtDate(c.date_fin)}</div>` : ''}
