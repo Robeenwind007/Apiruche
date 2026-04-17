@@ -5645,7 +5645,13 @@ function renderNouvelleColonie() {
       </div>
       <div class="form-group">
         <label class="field-label">Installer dans la ruche</label>
-        ${rucheSelectHtml('nc-ruche')}
+        <select id="nc-ruche">
+          <option value="">— Pas de ruche pour l'instant —</option>
+          ${DB.ruches
+            .filter(r => r.actif !== false && !DB.occupation_courante.find(o => o.ruche_id === r.id))
+            .sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric: true}))
+            .map(r => `<option value="${r.id}">${r.id} — ${r.nom}</option>`).join('')}
+        </select>
       </div>
       <button class="btn btn-primary btn-full" onclick="saveNouvelleColonie()" style="margin-top:8px">💾 Créer la colonie</button>
     </div>
