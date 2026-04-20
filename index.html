@@ -1278,7 +1278,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.5.8</div>
+  <div class="splash-version">v2.6.0</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1294,6 +1294,7 @@ select option { background: var(--bg2); color: var(--cream); }
     <div class="splash-stat-tile"><div class="splash-stat-val" id="ss-recolte">-</div><div class="splash-stat-lbl">Récolté 2026</div></div>
     <div class="splash-stat-tile"><div class="splash-stat-val green" id="ss-encours">-</div><div class="splash-stat-lbl">En cours</div></div>
   </div>
+  <div id="ss-arecolter" style="display:none;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;padding:0 16px"></div>
 </div>
 
 <div id="app">
@@ -1436,7 +1437,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.5.8</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.6.0</div>
   </nav>
 
 </div><!-- /app -->
@@ -1649,7 +1650,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.5.8';
+const APP_VERSION = '2.6.0';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -1901,6 +1902,25 @@ function renderSplashStats() {
   set('ss-hausses', hausses.length);
   set('ss-recolte', recolte.toFixed(1) + ' kg');
   set('ss-encours', enCours.toFixed(1) + ' kg');
+
+  // Hausses à récolter (estimé >= 12 kg)
+  const aRecolterEl = document.getElementById('ss-arecolter');
+  if (aRecolterEl) {
+    const aRecolter  = hausses.filter(h => { const p = poidsEstimeHausse(h); return p != null && p >= 12; });
+    const aDoubler   = hausses.filter(h => { const p = poidsEstimeHausse(h); return p != null && p >= 9 && p < 12; });
+    const badges = [
+      ...aRecolter.sort((a,b) => a.hausse_ref.localeCompare(b.hausse_ref))
+        .map(h => '<span style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:5px;background:#6ec06e;color:#0a0a06;font-size:12px;font-weight:800;letter-spacing:.3px">\uD83C\uDF6F ' + h.hausse_ref + '</span>'),
+      ...aDoubler.sort((a,b) => a.hausse_ref.localeCompare(b.hausse_ref))
+        .map(h => '<span style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:5px;background:#e8924a;color:#0a0a06;font-size:12px;font-weight:800;letter-spacing:.3px">\uD83C\uDF6F ' + h.hausse_ref + '</span>')
+    ];
+    if (badges.length) {
+      aRecolterEl.innerHTML = badges.join('');
+      aRecolterEl.style.display = 'flex';
+    } else {
+      aRecolterEl.style.display = 'none';
+    }
+  }
 
   el.style.display = 'grid';
 }
