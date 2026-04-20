@@ -1278,7 +1278,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.5.1</div>
+  <div class="splash-version">v2.5.7</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1436,7 +1436,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.5.1</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.5.7</div>
   </nav>
 
 </div><!-- /app -->
@@ -1649,7 +1649,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.5.1';
+const APP_VERSION = '2.5.7';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -3863,6 +3863,70 @@ async function saveFrelons() {
 }
 
 // --- RÉCOLTE ---
+function buildHaussesParRucheHtml(entries) {
+  // Calculer le max pour les barres
+  const maxTotal = Math.max.apply(null, entries.map(function(r) {
+    return r.hausses.reduce(function(s,h){ return s + (parseFloat(h.poids_miel)||0); }, 0);
+  }));
+
+  let html = '<div class="form-card">';
+  html += '<div class="form-title">\uD83C\uDF6F Hausses par ruche</div>';
+
+  entries.forEach(function(r) {
+    const enCours   = r.hausses.filter(function(h){ return !h.date_retrait; }).sort(function(a,b){ return a.hausse_ref.localeCompare(b.hausse_ref); });
+    const recoltees = r.hausses.filter(function(h){ return h.date_retrait && h.poids_miel; }).sort(function(a,b){ return new Date(b.date_retrait) - new Date(a.date_retrait); });
+    const totalRuche = r.hausses.reduce(function(s,h){ return s + (parseFloat(h.poids_miel)||0); }, 0);
+    const nbHausses  = r.hausses.length;
+    const barPct     = maxTotal > 0 ? Math.round((totalRuche / maxTotal) * 100) : 0;
+
+    html += '<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border-soft)">';
+
+    // Ligne synthétique : ruche | nb hausses | barre | total kg
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+    // Ruche label
+    html += '<div style="min-width:80px;flex-shrink:0">';
+    html += '<span style="font-size:12px;font-weight:700;color:var(--text)">' + r.ruche_id + '</span>';
+    html += '<span style="font-size:11px;color:var(--text-dim);margin-left:4px">' + r.nom + '</span>';
+    html += '</div>';
+    // Barre de progression
+    html += '<div style="flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden">';
+    html += '<div style="height:100%;width:' + barPct + '%;background:linear-gradient(90deg,#c8a84b,#e0c070);border-radius:5px;transition:width .3s"></div>';
+    html += '</div>';
+    // Stats droite
+    html += '<div style="text-align:right;flex-shrink:0;min-width:90px">';
+    html += '<span style="font-family:DM Serif Display,serif;font-size:15px;color:var(--gold-light)">' + (totalRuche > 0 ? totalRuche.toFixed(1) + ' kg' : '—') + '</span>';
+    html += '<span style="font-size:10px;color:var(--text-muted);margin-left:6px">' + nbHausses + ' hausse' + (nbHausses > 1 ? 's' : '') + '</span>';
+    html += '</div>';
+    html += '</div>';
+
+    // Détail : une ligne par hausse
+    r.hausses.sort(function(a,b){ return a.hausse_ref.localeCompare(b.hausse_ref); }).forEach(function(h) {
+      const isRecoltee = !!h.date_retrait;
+      const poids = parseFloat(h.poids_miel) || 0;
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 8px;margin-bottom:2px;border-radius:6px;background:' + (isRecoltee ? 'rgba(255,255,255,.03)' : 'rgba(200,168,75,.06)') + ';border:1px solid ' + (isRecoltee ? 'transparent' : 'rgba(200,168,75,.15)') + '">';
+      html += '<div style="display:flex;align-items:center;gap:6px">';
+      html += '<span style="font-size:11px;font-weight:700;color:' + (isRecoltee ? 'var(--text-dim)' : 'var(--gold)') + '">' + h.hausse_ref + '</span>';
+      if (isRecoltee) {
+        html += '<span style="font-size:10px;color:var(--text-muted)">retirée ' + fmtDate(h.date_retrait) + (h.variete ? ' · ' + h.variete : '') + '</span>';
+      } else {
+        html += '<span style="font-size:10px;color:var(--text-dim)">posée ' + fmtDate(h.date_pose) + (h.variete ? ' · ' + h.variete : '') + '</span>';
+      }
+      html += '</div>';
+      if (isRecoltee && poids > 0) {
+        html += '<span style="font-family:DM Serif Display,serif;font-size:13px;color:var(--gold-light);font-weight:600">' + poids.toFixed(1) + ' kg</span>';
+      } else if (!isRecoltee) {
+        html += '<span style="font-size:10px;color:var(--text-muted);font-style:italic">en cours</span>';
+      }
+      html += '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
 function renderRecolte() {
   const el = document.getElementById('content-recolte');
   const annee = new Date().getFullYear();
@@ -3887,7 +3951,18 @@ function renderRecolte() {
     })
   ].sort((a,b) => new Date(b.date) - new Date(a.date));
 
-  el.innerHTML = `
+  // Vue hausses par ruche : toutes les hausses groupées par ruche
+  const haussesParRuche = {};
+  (DB.hausses || []).forEach(h => {
+    const ruche = DB.ruches.find(r => r.id === h.ruche_id);
+    if (!haussesParRuche[h.ruche_id]) haussesParRuche[h.ruche_id] = { ruche_id: h.ruche_id, nom: ruche?.nom || '', hausses: [] };
+    haussesParRuche[h.ruche_id].hausses.push(h);
+  });
+  // Trier les ruches par id numérique
+  const haussesEntries = Object.values(haussesParRuche)
+    .sort((a,b) => a.ruche_id.localeCompare(b.ruche_id, undefined, {numeric: true}));
+
+  el.innerHTML = (haussesEntries.length > 0 ? buildHaussesParRucheHtml(haussesEntries) : '') + `
     <div class="form-card">
       <div class="form-title">🍯 Récolte ${annee}</div>
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px">
@@ -5425,7 +5500,51 @@ async function changerRuche(colonieId) {
       if (!r1.ok) throw new Error(await r1.text());
     }
 
-    // 2. Créer la nouvelle occupation
+    // 2. Transférer les actions en cours de l'ancienne ruche vers la nouvelle
+    if (occ) {
+      const ancienneRuche = DB.ruches.find(r => r.id === occ.ruche_id);
+      if (ancienneRuche) {
+        const actionsATransferer = {};
+        const actionsAEffacer = {};
+
+        // Cadre à mâles en cours
+        if (ancienneRuche.cadre_males) {
+          actionsATransferer.cadre_males = true;
+          actionsATransferer.date_cadre_males = ancienneRuche.date_cadre_males;
+          actionsAEffacer.cadre_males = false;
+          actionsAEffacer.date_cadre_males = null;
+        }
+        // Remérage / division en cours
+        if (ancienneRuche.remerage_division) {
+          actionsATransferer.remerage_division = ancienneRuche.remerage_division;
+          actionsATransferer.date_remerage_division = ancienneRuche.date_remerage_division;
+          actionsAEffacer.remerage_division = null;
+          actionsAEffacer.date_remerage_division = null;
+        }
+
+        // Copier sur la nouvelle ruche
+        if (Object.keys(actionsATransferer).length) {
+          const rT = await fetch(`${cfg.url}/rest/v1/ruches?id=eq.${nouvelleRucheId}`, {
+            method: 'PATCH',
+            headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+            body: JSON.stringify(actionsATransferer)
+          });
+          if (!rT.ok) throw new Error(await rT.text());
+
+          // Effacer de l'ancienne ruche
+          const rE = await fetch(`${cfg.url}/rest/v1/ruches?id=eq.${occ.ruche_id}`, {
+            method: 'PATCH',
+            headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+            body: JSON.stringify(actionsAEffacer)
+          });
+          if (!rE.ok) throw new Error(await rE.text());
+
+          addLog('UPDATE', 'ruches', `Actions transférées ${occ.ruche_id} → ${nouvelleRucheId}`);
+        }
+      }
+    }
+
+    // 3. Créer la nouvelle occupation
     const r2 = await fetch(`${cfg.url}/rest/v1/occupations`, {
       method: 'POST',
       headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
