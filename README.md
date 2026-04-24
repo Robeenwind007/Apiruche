@@ -1,196 +1,102 @@
-# ApiRuche — Principauté de Cordemais
-## Documentation technique v2.6.0
+# 🐝 Apiruche — Principauté de Cordemais
+
+Application de gestion apicole — fichier HTML unique, Supabase + GitHub Pages.
+
+**URL** : https://robeenwind007.github.io/Apiruche/
 
 ---
 
-## Présentation
+## Changelog
 
-ApiRuche est une Progressive Web App (PWA) de gestion apicole déployée sur GitHub Pages avec Supabase comme backend. L'application est entièrement contenue dans un seul fichier `index.html` — CSS, JavaScript et HTML intégrés — sans dépendance à un framework ni processus de build.
+### v2.7.8 — Avril 2026
+- **Production** : tuile gauche remplacée par le nombre de hausses en place (au lieu de "Récolté 0 kg")
+- **Production** : hausses triées de la plus ancienne à la plus récente
+- **Production** : barre de progression 0→15 kg par hausse avec repères à 9 kg (orange) et 12 kg (vert)
+- **Production** : hausses regroupées par ruche avec en-tête (ruche + colonie + nb hausses)
+- **Récolte Année N** : section "Récoltes par ruche" affiche uniquement les hausses récoltées (historique)
+- **Récolte Année N** : chaque hausse récoltée affiche date, variété, numéro de lot et colonie au moment de la récolte
+- **Récolte Année N** : bloc export PDF toujours visible dès qu'une hausse est récoltée
+- **Numéro de lot** : les hausses récoltées le même jour partagent automatiquement le même numéro de lot
+
+### v2.7.x — Avril 2026
+- **Production** : nouveau groupement par ruche
+- **Récolte** : séparation nette Production (actif) / Récolte (historique)
+- **Export PDF** : déplacé de Production vers Récolte Année N
+- **Tableau de bord** : tuiles Achats / Ventes / Balance pour l'année en cours
+- **Alertes splash** : badges oranges (hausses à doubler ≥9 kg) et verts (hausses à récolter ≥12 kg)
+- **CRON WhatsApp** : alertes hausses à récolter et à doubler ajoutées
+- **Stock & Vente** : liste des opérations avec modifier/supprimer, CA annuel, regroupement par variété
+- **Nourrir / Soigner / Actions** : cartes ruches avec nom en haut, numéro en dessous
+- **Nouvelle colonie** : select des ruches libres uniquement
+- **Déplacement colonie** : transfert automatique des actions en cours (cadre à mâles, remérage) vers la nouvelle ruche
+- **Version visible** : numéro de version affiché en bas de la nav bar
+
+### v2.5.x — Mars 2026
+- Alertes démarrage : case à cocher "Ne plus afficher" avec purge automatique
+- Bug calcul stock : regroupement par variété uniquement
+- Correction ENUM `type_pot` → TEXT dans Supabase
+- Correction sélecteur ruches Nourrir/Soigner : nom de la ruche au lieu du nom de colonie
+
+### v2.4.x — Mars 2026
+- Workflow GitHub Actions alertes WhatsApp (Node.js 24, cron 11h UTC)
+- Correction bug CRON : calcul poids depuis `demi_pesee` quand `pesee` est null
+- Script `cron-alertes.js` à la racine du repo
+
+### v2.3.x et antérieures
+- Mise en place Stock & Vente, alertes banner, journal des actions
+- Écrans : Ruches, Colonies, Hausses, Pesée, Nourrir, Soigner, Actions, Varroa, Frelons, Achats, Production, Réglages
 
 ---
 
 ## Architecture
 
-| Élément | Technologie |
-|---|---|
-| Frontend | HTML/CSS/JS vanilla, single-file |
-| Backend | Supabase (PostgreSQL + Storage) |
-| Déploiement | GitHub Pages |
-| Persistance locale | localStorage (cache + config) |
-| Notifications | CallMeBot (WhatsApp API) |
+| Composant | Détail |
+|-----------|--------|
+| Frontend | HTML/CSS/JS — fichier unique `index.html` |
+| Backend | Supabase (PostgreSQL + REST API) |
+| Hébergement | GitHub Pages |
+| Alertes | GitHub Actions CRON + WhatsApp Callmebot |
+| Polices | DM Serif Display · Inter · Cinzel |
 
----
+## Logique Production / Récolte
 
-## Structure Supabase
+| Écran | Contenu |
+|-------|---------|
+| **Production** | Hausses **en cours** uniquement — pose, suivi, retrait |
+| **Récolte Année N** | Hausses **récoltées** uniquement — historique, poids réels, export PDF |
 
-### Tables
+Les hausses en cours disparaissent de Production une fois récoltées et apparaissent dans Récolte.
 
-| Table | Rôle |
-|---|---|
-| `ruches` | Ruches du rucher (id, nom, type, photo_url, actif, cadre_males, remerage_division…) |
-| `colonies` | Colonies avec génétique, couleur reine, marquage, date_creation, date_fin |
-| `occupations` | Historique des occupations colonie ↔ ruche |
-| `occupation_courante` | Vue ou table filtrée : occupations sans date_fin |
-| `pesees` | Pesées (demi_pesee, pesee, nb_cadres, nb_hausse, ratio, semaine) |
-| `hausses` | Hausses posées (hausse_ref, ruche_id, date_pose, poids_ref, date_retrait, poids_retrait, poids_miel, variete, **num_lot**) |
-| `nourrissements` | Nourrissements multi-ruches (type, quantite, semaine) |
-| `traitements` | Traitements varroa (type, semaine, date_fin) |
-| `actions` | Actions rucher libres (type, notes, semaine) |
-| `recoltes` | Récoltes miel (poids_miel, variete, semaine) |
-| `conditionnements` | Conditionnements (nb_pots, type_pot, variete) |
-| `achats` | Achats matériel/consommables (fournisseur, type_achat, montant_ttc, **facture_url**) |
-| `pieges_frelons` | Pièges frelons asiatiques (ruche_id, date_pose, nb_captures) |
-| `comptages_varroa` | Comptages varroa (colonie_id, nb_abeilles, nb_varroa) |
-| `ruchers` | Ruchers (nom, adresse) |
-| `fiche_apiculteur` | Fiche apiculteur (prenom, nom, napi, siret, email, telephone) |
+## Numéro de lot
 
-### Migrations nécessaires
+Le numéro de lot est généré automatiquement au format `AA-M-XX` (ex: `26-M-03`).
+Toutes les hausses récoltées **le même jour** partagent automatiquement le même numéro de lot.
 
-```sql
--- Colonne facture PDF pour les achats
-ALTER TABLE public.achats ADD COLUMN IF NOT EXISTS facture_url text;
+## Seuils hausses
 
--- Numéro de lot pour les hausses (récolte)
-ALTER TABLE public.hausses ADD COLUMN IF NOT EXISTS num_lot text;
-```
-
-### Storage Supabase
-
-| Bucket | Usage | Visibilité |
+| Poids estimé | Couleur | Action |
 |---|---|---|
-| `ruches-images` | Photos des ruches | Public |
-| `achats-factures` | Factures PDF des achats | Public |
+| < 9 kg | 🟡 Doré | Normal |
+| ≥ 9 kg | 🟠 Orange | Poser une hausse supplémentaire |
+| ≥ 12 kg | 🟢 Vert | Récolter |
 
-**Policies Storage pour `achats-factures` :**
+## Configuration
 
-```sql
-CREATE POLICY "Allow upload achats-factures"
-ON storage.objects FOR INSERT TO anon
-WITH CHECK (bucket_id = 'achats-factures');
+Au premier lancement, renseigner dans **Réglages → Supabase** :
+- URL du projet Supabase
+- Clé `anon` Supabase
 
-CREATE POLICY "Allow read achats-factures"
-ON storage.objects FOR SELECT TO anon
-USING (bucket_id = 'achats-factures');
-```
+Pour les alertes WhatsApp, renseigner dans **Réglages → WhatsApp** :
+- Numéro de téléphone
+- Clé API Callmebot
 
----
+Les secrets GitHub Actions (`SUPABASE_URL`, `SUPABASE_KEY`, `WA_PHONE`, `WA_APIKEY`) sont à configurer dans Settings → Secrets du repo.
 
-## Fonctionnalités
+## Fichiers du repo
 
-### Ruches
-- Liste avec photo, statut colonie, dernière pesée, variation de poids, badges hausses actives sous le poids
-- Filtre actives / toutes, navigation prev/next
-- Photo modifiable via Supabase Storage
-- Fiche détail : pesées, hausses avec miel estimé, actions, traitements, nourrissements, varroa
-
-### Colonies
-- Liste : ruche d'occupation en premier, génétique, pastille couleur reine inline dans le nom
-- Pastille avec coche SVG blanche si reine marquée, couleur jaune `#e6db0c`
-- Fiche détail : occupation, déplacement, gentillesse, historique complet
-
-### Pesées
-- Demi-pesée → calcul automatique pesée totale et ratio kg/cadre
-- Curseur nb cadres avec repères visuels : traits + numérotation **4 | 6 | 8 | 10**
-- Clavier numérique (`inputmode="decimal"`)
-- **Historique** : 50 pesées par défaut, bouton "Afficher N de plus" (par tranches de 50)
-- **Modification** via bottom sheet (✏️), **suppression** avec confirmation
-
-### Production (Hausses)
-- Compteurs en haut : Récolté année + Miel en cours
-- Pose : référence, ruche, date, poids de référence pré-rempli
-- Retrait :
-  - Calcul automatique du miel récolté
-  - Champ **Produit** : Toutes fleurs, Châtaignier, Bonbons, Hydromel
-  - **N° de lot** auto-généré `YY-P-##` (P = M/H/B selon produit), séquentiel global annuel, mis à jour en temps réel au changement de produit ou de date
-- Historique poses + retraits
-
-### Nourrissement / Traitements / Actions / Varroa / Frelons
-- Multi-ruches, types configurables
-- Compteur traitements corrigé (filtre sur `semaine`)
-
-### Achats
-- Facture PDF : upload à la création ou a posteriori
-- Modification et suppression via bottom sheet
-
-### Dashboard
-- Toutes les tuiles de stats sont cliquables → dropdown détail :
-  - **Ruches** : liste ID — Nom
-  - **Colonies** : Nom colonie | ID ruche
-  - **Hausses** : ref · ruche · jours en place
-  - **En stock** : par produit
-  - **Traitements** : par type
-- Bloc **Hausses en production** : miel estimé par hausse, lien vers Production
-
-### Alertes au démarrage
-- Cadre à mâles > 14j, remérage > 14j, pose de hausse recommandée
-- "Ne plus afficher" sauvegardé immédiatement au cochage
-- Purge snooze uniquement si données chargées (évite effacement sur cache vide)
-
-### Splash screen
-- Logo hexagone SVG avec relief (gradient lumière/ombre, bordure dégradée, doubles contours)
-- Statistiques temps réel : ruches, hausses, récolté année, miel en cours
-- Thème clair/sombre appliqué dès l'ouverture
-
-### Interface générale
-- **Thème clair "Miel & Lin"** et thème sombre — bascule dans Paramétrage → Apparence
-- **Menu** : 3 colonnes mobile / 6 desktop, tuiles 72px, icônes SVG `currentColor`
-- **Nav bar** : icônes SVG cohérentes
-- Titres de sections menu en doré gras
-
----
-
-## Numérotation des lots de récolte
-
-Format : `YY-P-##`
-
-| Composant | Valeur |
-|---|---|
-| `YY` | Année sur 2 chiffres |
-| `P` | M = miel (Toutes fleurs, Châtaignier), H = hydromel, B = bonbons |
-| `##` | Séquentiel global annuel (nb hausses retirées avec num_lot dans l'année + 1) |
-
----
-
-## Calcul du miel estimé
-
-```
-miel_estimé = dernière_pesée_ruche_depuis_pose
-            − poids_ref_hausse
-            − Σ(poids_miel des autres hausses retirées depuis la date_pose)
-```
-
-Appliqué à 4 endroits : dashboard, liste hausses actives, fiche ruche, formulaire de retrait.
-
----
-
-## Alertes — logique snooze
-
-Clés : `localStorage['ruches_alertes_snooze']` → tableau `"nom_ruche|type_alerte"`.
-Purge uniquement si `DB.ruches.length > 0`.
-
----
-
-## Déploiement
-
-```bash
-git clone https://github.com/Robeenwind007/apiruche.git
-git add index.html
-git commit -m "v2.6.0"
-git push origin main
-```
-
----
-
-## Versioning
-
-| Version | Date | Changements principaux |
-|---|---|---|
-| 2.6.0 | Mars 2026 | Icônes SVG menu + nav, thème clair/sombre, historique pesées 50+ avec pagination, édition pesées, curseur cadres avec repères, dashboard dropdowns détail, bloc hausses production dashboard, colonies pastille reine inline + ordre inversé, n° de lot récolte YY-P-##, champ Produit (ex-Variété), couleur jaune reine #e6db0c, correction compteur traitements |
-| 2.5.0 | Mars 2026 | Factures PDF achats, édition/suppression achats, badges hausses liste ruches, stats splash, logo hexagonal relief, compteurs production |
-| 2.4.x | Mars 2026 | Hausses et production miel, paramétrage complet, WhatsApp alertes, fiche apiculteur |
-| 2.0.x | Fév. 2026 | Migration Supabase, colonies, dashboard, historique |
-| 1.x | Jan. 2026 | Version initiale localStorage |
-
----
-
-*ApiRuche — Principauté de Cordemais — usage personnel*
+| Fichier | Rôle |
+|---------|------|
+| `index.html` | Application complète |
+| `cron-alertes.js` | Script CRON alertes WhatsApp |
+| `.github/workflows/alertes-whatsapp.yml` | Workflow GitHub Actions |
+| `README.md` | Ce fichier |

@@ -1278,7 +1278,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.6.4</div>
+  <div class="splash-version">v2.7.8</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1437,7 +1437,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.6.4</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.7.8</div>
   </nav>
 
 </div><!-- /app -->
@@ -1650,7 +1650,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.6.4';
+const APP_VERSION = '2.7.8';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -2444,7 +2444,7 @@ function renderDashboard() {
 
   // Rangée stock/récolte/traitements
   var dashR3 = '<div class="dash-row">';
-  dashR3 += '<div class="dash-stat"><div class="dash-stat-val">' + totalMiel + '<span style="font-size:14px;color:var(--text-dim)"> kg</span></div><div class="dash-stat-lbl">Récolté ' + anneeEnCours + '</div></div>';
+  dashR3 += '<div class="dash-stat"><div class="dash-stat-val">' + totalMiel + '<span style="font-size:14px;color:var(--text-dim)"> kg</span></div><div class="dash-stat-lbl">R\u00e9colt\u00e9 ' + anneeEnCours + '</div></div>';
   dashR3 += '<div class="dash-stat" style="cursor:pointer;position:relative" onclick="this.querySelector(\'.stock-detail\').style.display=this.querySelector(\'.stock-detail\').style.display===\'none\'?\'block\':\'none\'">';
   dashR3 += '<div class="dash-stat-val">' + stockTotal + '</div><div class="dash-stat-lbl">En stock \uD83D\uDD3D</div>';
   dashR3 += '<div class="stock-detail" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 12px;min-width:160px;z-index:10;text-align:left;margin-top:4px">';
@@ -3155,7 +3155,7 @@ async function saveSoigner() {
 function renderProduction() {
   const el = document.getElementById('content-production');
   const hausses = DB.hausses || [];
-  const actives  = hausses.filter(h => !h.date_retrait).sort((a,b) => new Date(b.date_pose) - new Date(a.date_pose));
+  const actives  = hausses.filter(h => !h.date_retrait).sort((a,b) => new Date(a.date_pose) - new Date(b.date_pose));
   const recoltees = hausses.filter(h => h.date_retrait).sort((a,b) => new Date(b.date_retrait) - new Date(a.date_retrait));
 
   // Calcul miel estimé en temps réel pour hausses actives
@@ -3180,8 +3180,8 @@ function renderProduction() {
   let html = '<div class="form-card" style="padding:12px 16px">';
   html += '<div style="display:flex;gap:12px">';
   html += '<div style="flex:1;background:rgba(200,168,75,.08);border-radius:10px;padding:10px;text-align:center">';
-  html += '<div style="font-family:DM Serif Display,serif;font-size:22px;color:var(--gold)">' + totalAnnee.toFixed(1) + ' kg</div>';
-  html += '<div style="font-size:10px;color:var(--text-muted);margin-top:2px">Récolté ' + annee + '</div></div>';
+  html += '<div style="font-family:DM Serif Display,serif;font-size:32px;color:var(--gold)">' + actives.length + '</div>';
+  html += '<div style="font-size:10px;color:var(--text-muted);margin-top:2px">Hausse' + (actives.length > 1 ? 's' : '') + ' en place</div></div>';
   html += '<div style="flex:1;background:rgba(90,138,58,.12);border:1px solid rgba(122,184,90,.2);border-radius:10px;padding:10px;text-align:center">';
   html += '<div style="font-family:DM Serif Display,serif;font-size:22px;color:#7ab85a">' + mielEnCours.toFixed(1) + ' kg</div>';
   html += '<div style="font-size:10px;color:var(--text-muted);margin-top:2px">En cours (' + actives.length + ' hausse' + (actives.length > 1 ? 's' : '') + ')</div></div>';
@@ -3197,28 +3197,44 @@ function renderProduction() {
   if (!actives.length) {
     html += '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">Aucune hausse en place actuellement</div>';
   } else {
+    // Grouper par ruche, triées par numéro
+    const activesParRuche = {};
     actives.forEach(h => {
-      const ruche = DB.ruches.find(r => r.id === h.ruche_id);
-      const occ   = DB.occupation_courante.find(o => o.ruche_id === h.ruche_id);
+      if (!activesParRuche[h.ruche_id]) activesParRuche[h.ruche_id] = [];
+      activesParRuche[h.ruche_id].push(h);
+    });
+    const rucheIds = Object.keys(activesParRuche).sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
+
+    rucheIds.forEach(rucheId => {
+      const ruche = DB.ruches.find(r => r.id === rucheId);
+      const occ   = DB.occupation_courante.find(o => o.ruche_id === rucheId);
       const col   = occ ? DB.colonies.find(c => c.id === occ.colonie_id) : null;
-      const miel  = mielsActif(h);
-      const jours = Math.floor((new Date() - new Date(h.date_pose)) / 86400000);
-      const rucheLabel = ruche ? (ruche.id + (ruche.nom ? ' — ' + ruche.nom : '')) : h.ruche_id;
       const colNom = col ? (col.nom || '—') : '—';
 
-      html += '<div style="padding:12px 0;border-bottom:1px solid var(--border-soft)">';
+      // En-tête ruche
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 4px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:4px">';
+      html += '<div>';
+      html += '<span style="font-size:13px;font-weight:700;color:var(--text)">' + rucheId + ' — ' + (ruche?.nom || '') + '</span>';
+      html += '<span style="font-size:11px;color:var(--text-muted);margin-left:8px">👑 ' + colNom + '</span>';
+      html += '</div>';
+      html += '<span style="font-size:10px;color:var(--text-dim)">' + activesParRuche[rucheId].length + ' hausse' + (activesParRuche[rucheId].length > 1 ? 's' : '') + '</span>';
+      html += '</div>';
+
+      activesParRuche[rucheId].forEach(h => {
+      const miel  = mielsActif(h);
+      const jours = Math.floor((new Date() - new Date(h.date_pose)) / 86400000);
+
+      html += '<div style="padding:8px 0 8px 8px;border-bottom:1px solid var(--border-soft)">';
       html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
       html += '<div>';
-      html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
-      html += '<span style="font-size:15px;font-weight:700;color:var(--gold)">' + h.hausse_ref + '</span>';
-      html += '<span style="font-size:13px;font-weight:600;color:var(--text)">' + rucheLabel + '</span>';
-      html += '<span style="font-size:11px;color:var(--text-muted)">' + colNom + '</span>';
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<span style="font-size:14px;font-weight:700;color:var(--gold)">' + h.hausse_ref + '</span>';
       html += '</div>';
-      html += '<div style="font-size:11px;color:var(--text-muted);margin-top:3px">Posée le ' + fmtDate(h.date_pose) + ' · ' + jours + ' j</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">Posée le ' + fmtDate(h.date_pose) + ' · ' + jours + ' j</div>';
       html += '</div>';
       html += '<div style="text-align:right;flex-shrink:0">';
       if (miel !== null) {
-        const coulMiel = parseFloat(miel) >= 5 ? '#7ab85a' : parseFloat(miel) >= 2 ? '#e08020' : 'var(--text-muted)';
+        const coulMiel = parseFloat(miel) >= 12 ? '#6ec06e' : parseFloat(miel) >= 9 ? '#e8924a' : parseFloat(miel) >= 2 ? '#e08020' : 'var(--text-muted)';
         html += '<div style="font-family:DM Serif Display,serif;font-size:18px;font-weight:600;color:' + coulMiel + '">' + miel + ' <span style="font-size:11px">kg</span></div>';
         html += '<div style="font-size:10px;color:var(--text-muted)">miel estimé</div>';
         if (h.poids_ref) html += '<div style="font-size:10px;color:var(--text-muted)">réf. ' + parseFloat(h.poids_ref).toFixed(1) + ' kg</div>';
@@ -3227,60 +3243,195 @@ function renderProduction() {
         if (h.poids_ref) html += '<div style="font-size:10px;color:var(--text-muted)">réf. ' + parseFloat(h.poids_ref).toFixed(1) + ' kg</div>';
       }
       html += '</div></div>';
+      // Barre de progression 0→15 kg (extensible)
+      if (miel !== null) {
+        const poidsVal = parseFloat(miel);
+        const maxBar = Math.max(15, poidsVal);
+        const pct = Math.round((poidsVal / maxBar) * 100);
+        const coulBar = poidsVal >= 12 ? '#6ec06e' : poidsVal >= 9 ? '#e8924a' : '#c8a84b';
+        html += '<div style="margin:8px 0 4px">';
+        html += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-bottom:3px">';
+        html += '<span>0 kg</span><span style="color:' + coulBar + ';font-weight:600">' + poidsVal.toFixed(1) + ' kg</span><span>' + maxBar + ' kg</span>';
+        html += '</div>';
+        html += '<div style="height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:visible;position:relative">';
+        // Marque 9 kg
+        html += '<div style="position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(232,146,74,.4);left:' + Math.round(9/maxBar*100) + '%"></div>';
+        // Marque 12 kg
+        html += '<div style="position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(110,192,110,.4);left:' + Math.round(12/maxBar*100) + '%"></div>';
+        html += '<div style="height:100%;width:' + pct + '%;background:' + coulBar + ';border-radius:4px;transition:width .3s"></div>';
+        html += '</div></div>';
+      }
       html += '<div style="display:flex;gap:8px;margin-top:10px">';
       html += '<button onclick="renderProductionRetrait(\'' + h.id + '\')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:12px;font-weight:600;cursor:pointer">🍯 Retirer la hausse</button>';
       html += '<button onclick="deleteHausse(\'' + h.id + '\')" style="padding:7px 12px;border-radius:8px;border:1px solid #e06060;background:transparent;color:#e06060;font-size:12px;font-weight:600;cursor:pointer">🗑</button>';
       html += '</div>';
       html += '</div>';
-    });
-  }
-  html += '</div>';
-
-  // Historique unifié poses + retraits
-  html += '<div class="form-card">';
-  html += '<div class="form-title" style="margin-bottom:12px">📋 Historique complet</div>';
-
-  // Construire liste chronologique : un événement POSE + un événement RETRAIT par hausse
-  const evenements = [];
-  hausses.forEach(h => {
-    evenements.push({ type: 'pose',    date: h.date_pose,    hausse: h });
-    if (h.date_retrait) evenements.push({ type: 'retrait', date: h.date_retrait, hausse: h });
-  });
-  evenements.sort((a,b) => new Date(b.date) - new Date(a.date));
-
-  if (!evenements.length) {
-    html += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">Aucun historique</div>';
-  } else {
-    evenements.slice(0, 40).forEach(ev => {
-      const h = ev.hausse;
-      const ruche = DB.ruches.find(r => r.id === h.ruche_id);
-      const rucheLabel = ruche ? (ruche.id + (ruche.nom ? ' — ' + ruche.nom : '')) : h.ruche_id;
-      const isPose = ev.type === 'pose';
-      const badgeBg   = isPose ? 'rgba(80,160,80,.15)'  : 'rgba(200,168,75,.15)';
-      const badgeBord = isPose ? '#5a9a5a'              : 'var(--gold)';
-      const badgeCol  = isPose ? '#7ab85a'              : 'var(--gold)';
-      const badgeLabel= isPose ? '↓ Pose'               : '↑ Retrait';
-
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-soft)">';
-      html += '<div style="display:flex;align-items:flex-start;gap:9px">';
-      html += '<span style="flex-shrink:0;margin-top:1px;padding:2px 7px;border-radius:4px;border:1px solid ' + badgeBord + ';background:' + badgeBg + ';color:' + badgeCol + ';font-size:10px;font-weight:700">' + badgeLabel + '</span>';
-      html += '<div>';
-      html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
-      html += '<span style="font-size:12px;font-weight:700;color:var(--gold)">' + h.hausse_ref + '</span>';
-      html += '<span style="font-size:12px;color:var(--text)">' + rucheLabel + '</span>';
-      html += '</div>';
-      html += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + fmtDate(ev.date) + (isPose ? ' · réf. ' + (h.poids_ref ? parseFloat(h.poids_ref).toFixed(1) + ' kg' : '—') : '') + '</div>';
-      html += '</div></div>';
-      html += '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">';
-      if (!isPose && h.poids_miel) html += '<div style="font-family:DM Serif Display,serif;font-size:15px;color:var(--gold)">' + parseFloat(h.poids_miel).toFixed(1) + ' <span style="font-size:10px">kg</span></div>';
-      html += '<button onclick="deleteHausse(\'' + h.id + '\')" style="padding:4px 8px;border-radius:6px;border:1px solid #e06060;background:transparent;color:#e06060;font-size:12px;cursor:pointer" title="Supprimer">🗑</button>';
-      html += '</div>';
-      html += '</div>';
-    });
+      }); // fin hausses de la ruche
+      html += '<div style="margin-bottom:8px"></div>';
+    }); // fin rucheIds
   }
   html += '</div>';
 
   el.innerHTML = html;
+}
+
+// --- EXPORT PDF RECOLTE ---
+async function exportRecoltesPDF(numLot) {
+  if (!numLot) { toast('Sélectionnez un lot', 'err'); return; }
+
+  // Charger jsPDF si pas encore chargé
+  if (!window.jspdf) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  const { jsPDF } = window.jspdf;
+
+  // Hausses du lot sélectionné
+  const haussesLot = (DB.hausses || []).filter(h => h.num_lot === numLot && h.date_retrait);
+  if (!haussesLot.length) { toast('Aucune hausse pour ce lot', 'err'); return; }
+
+  // Données apiculteur
+  const fiche = DB.fiche_apiculteur?.[0] || {};
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210, H = 297;
+  const mL = 20, mR = 20, mT = 20;
+  let y = mT;
+
+  // ── En-tête ────────────────────────────────────────────────
+  doc.setFillColor(30, 25, 10);
+  doc.rect(0, 0, W, 38, 'F');
+  doc.setTextColor(200, 168, 75);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Principaute de Cordemais', mL, 16);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(180, 160, 100);
+  doc.text('Document de recolte de miel', mL, 24);
+  doc.setTextColor(140, 130, 90);
+  doc.setFontSize(9);
+  doc.text('Lot : ' + numLot, mL, 31);
+  doc.text('Genere le ' + new Date().toLocaleDateString('fr-FR'), W - mR, 31, { align: 'right' });
+
+  y = 50;
+
+  // ── Informations apiculteur ────────────────────────────────
+  if (fiche.nom || fiche.prenom || fiche.adresse) {
+    doc.setFillColor(248, 244, 230);
+    doc.roundedRect(mL, y, W - mL - mR, 24, 3, 3, 'F');
+    doc.setTextColor(60, 50, 20);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Apiculteur', mL + 4, y + 7);
+    doc.setFont('helvetica', 'normal');
+    const nomComplet = [(fiche.prenom||''), (fiche.nom||'')].filter(Boolean).join(' ');
+    if (nomComplet) doc.text(nomComplet, mL + 4, y + 13);
+    if (fiche.adresse) doc.text(fiche.adresse, mL + 4, y + 19);
+    if (fiche.numero_apiculteur) doc.text('N° apiculteur : ' + fiche.numero_apiculteur, W - mR - 4, y + 13, { align: 'right' });
+    if (fiche.napi) doc.text('NAPI : ' + fiche.napi, W - mR - 4, y + 19, { align: 'right' });
+    y += 30;
+  }
+
+  // ── Récapitulatif lot ──────────────────────────────────────
+  const totalLot = haussesLot.reduce((s, h) => s + (parseFloat(h.poids_miel) || 0), 0);
+  const varietes = [...new Set(haussesLot.map(h => h.variete).filter(Boolean))].join(', ') || 'Non définie';
+
+  doc.setFillColor(200, 168, 75);
+  doc.roundedRect(mL, y, W - mL - mR, 18, 3, 3, 'F');
+  doc.setTextColor(20, 15, 5);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Lot ' + numLot + '  —  ' + haussesLot.length + ' hausse' + (haussesLot.length > 1 ? 's' : '') + '  —  Total : ' + totalLot.toFixed(1) + ' kg', mL + 4, y + 7);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Variete(s) : ' + varietes, mL + 4, y + 13);
+  y += 24;
+
+  // ── Tableau des hausses ────────────────────────────────────
+  const colX  = [mL, mL+18, mL+46, mL+90, mL+118, mL+140];
+  const colW  = [18,  28,    44,    28,     22,      30];
+  const heads = ['Ref.', 'Ruche', 'Colonie', 'Date retrait', 'Poids miel', 'Variete'];
+
+  // En-tête tableau
+  doc.setFillColor(50, 40, 15);
+  doc.rect(mL, y, W - mL - mR, 8, 'F');
+  doc.setTextColor(200, 168, 75);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  heads.forEach((h, i) => { doc.text(h, colX[i] + 2, y + 5.5); });
+  y += 8;
+
+  // Lignes
+  haussesLot.sort((a,b) => a.hausse_ref.localeCompare(b.hausse_ref)).forEach((h, idx) => {
+    const ruche    = DB.ruches.find(r => r.id === h.ruche_id);
+    const occ      = (DB.occupations || []).find(o => o.ruche_id === h.ruche_id && o.date_debut <= h.date_retrait && (!o.date_fin || o.date_fin >= h.date_retrait));
+    const col      = occ ? DB.colonies.find(c => c.id === occ.colonie_id) : null;
+    const rucheStr = ruche ? (ruche.id + ' - ' + (ruche.nom||'')) : (h.ruche_id || '—');
+    const colStr   = col  ? (col.nom || '—') : '—';
+    const dateStr  = h.date_retrait ? new Date(h.date_retrait).toLocaleDateString('fr-FR') : '—';
+    const poidsStr = h.poids_miel  ? parseFloat(h.poids_miel).toFixed(1) + ' kg' : '—';
+    const varStr   = h.variete || '—';
+
+    const bg = idx % 2 === 0 ? [252, 250, 242] : [244, 240, 225];
+    doc.setFillColor(bg[0], bg[1], bg[2]);
+    doc.rect(mL, y, W - mL - mR, 8, 'F');
+    doc.setTextColor(40, 30, 10);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    const vals = [h.hausse_ref, rucheStr, colStr, dateStr, poidsStr, varStr];
+    vals.forEach((v, i) => {
+      const maxW = colW[i] - 3;
+      const txt = doc.splitTextToSize(v, maxW)[0] || v;
+      doc.text(txt, colX[i] + 2, y + 5.5);
+    });
+
+    // Notes
+    if (h.notes) {
+      y += 8;
+      doc.setFillColor(250, 248, 238);
+      doc.rect(mL, y, W - mL - mR, 6, 'F');
+      doc.setTextColor(120, 100, 50);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'italic');
+      doc.text('Note : ' + h.notes, mL + 4, y + 4);
+    }
+    y += 8;
+
+    // Nouvelle page si besoin
+    if (y > H - 30) {
+      doc.addPage();
+      y = mT;
+    }
+  });
+
+  // ── Total ──────────────────────────────────────────────────
+  y += 4;
+  doc.setFillColor(30, 25, 10);
+  doc.rect(mL, y, W - mL - mR, 10, 'F');
+  doc.setTextColor(200, 168, 75);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('TOTAL : ' + totalLot.toFixed(1) + ' kg', W - mR - 4, y + 7, { align: 'right' });
+
+  // ── Pied de page ───────────────────────────────────────────
+  y = H - 20;
+  doc.setDrawColor(200, 168, 75, 0.3);
+  doc.setLineWidth(0.3);
+  doc.line(mL, y, W - mR, y);
+  doc.setTextColor(150, 130, 80);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Document genere par Apiruche — Principaute de Cordemais', mL, y + 5);
+  doc.text('Page 1', W - mR, y + 5, { align: 'right' });
+
+  // ── Sauvegarde ─────────────────────────────────────────────
+  doc.save('recolte_lot_' + numLot.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
+  toast('PDF généré ✓', 'ok');
 }
 
 // --- FORMULAIRE POSE DE HAUSSE ---
@@ -3445,8 +3596,17 @@ function genNumerotLot(dateRetrait, produit) {
   const yy = String(d.getFullYear()).slice(-2);
   const lettre = produitLotLettre(produit);
   const annee = d.getFullYear().toString();
-  const nbExistants = (DB.hausses || []).filter(h => h.date_retrait && h.date_retrait.startsWith(annee) && h.num_lot).length;
-  const seq = String(nbExistants + 1).padStart(2, '0');
+  const dateStr = dateRetrait || d.toISOString().slice(0, 10);
+
+  // Si une hausse a déjà été récoltée aujourd'hui avec un lot, on réutilise ce numéro
+  const lotExistant = (DB.hausses || []).find(h =>
+    h.date_retrait === dateStr && h.num_lot
+  );
+  if (lotExistant) return lotExistant.num_lot;
+
+  // Sinon on génère un nouveau numéro séquentiel
+  const lotsUniques = new Set((DB.hausses || []).filter(h => h.date_retrait && h.date_retrait.startsWith(annee) && h.num_lot).map(h => h.num_lot));
+  const seq = String(lotsUniques.size + 1).padStart(2, '0');
   return yy + '-' + lettre + '-' + seq;
 }
 
@@ -3478,7 +3638,7 @@ function renderProductionRetrait(hausseId) {
     + '<div style="display:flex;justify-content:space-between;align-items:center">'
     + '<div>'
     + '<div style="font-size:16px;font-weight:700;color:var(--gold)">' + h.hausse_ref
-      + ' <span style="font-size:13px;font-weight:400;color:var(--text)">' + (ruche ? ruche.id : h.ruche_id) + '</span></div>'
+      + ' <span style="font-size:13px;font-weight:400;color:var(--text)">' + (ruche ? ruche.id + ' — ' + ruche.nom : h.ruche_id) + '</span></div>'
     + '<div style="font-size:11px;color:var(--text-muted)">Posée le ' + fmtDate(h.date_pose)
       + (occ ? ' · ' + (occ.colonie_nom || 'Colonie') : '') + '</div>'
     + '<div style="font-size:11px;color:var(--text-muted)">Poids de référence : ' + parseFloat(h.poids_ref).toFixed(1) + ' kg</div>'
@@ -3501,7 +3661,7 @@ function renderProductionRetrait(hausseId) {
 
     + '<div class="form-row full"><div class="form-group"><label class="field-label">Produit</label>'
     + '<select id="f-retrait-variete"><option value="">— Non définie —</option>'
-    + getListes().variete_miel.map(v => '<option' + (h.variete === v ? ' selected' : '') + '>' + v + '</option>').join('')
+    + getListes().variete_miel.filter(v => v !== 'Bonbons' && v !== 'Hydromel').map(v => '<option' + (h.variete === v ? ' selected' : '') + '>' + v + '</option>').join('')
     + '</select></div></div>'
 
     + '<div class="form-row full"><div class="form-group"><label class="field-label">Notes</label>'
@@ -3891,27 +4051,23 @@ function poidsEstimeHausse(h) {
 }
 
 function buildHaussesParRucheHtml(entries) {
-  // Calculer le total par ruche (poids réel + estimé en cours)
+  // Toutes les hausses ici sont récoltées — calcul du total par poids réel
   function totalRucheCalc(r) {
-    return r.hausses.reduce(function(s,h){
-      var p = poidsEstimeHausse(h); return s + (p != null ? p : 0);
-    }, 0);
+    return r.hausses.reduce(function(s,h){ return s + (parseFloat(h.poids_miel)||0); }, 0);
   }
   var maxTotal = Math.max.apply(null, entries.map(totalRucheCalc).concat([0]));
 
   var html = '<div class="form-card">';
-  html += '<div class="form-title">\uD83C\uDF6F Hausses par ruche</div>';
+  html += '<div class="form-title">\uD83C\uDF6F Récoltes par ruche</div>';
 
   entries.forEach(function(r) {
-    var enCours   = r.hausses.filter(function(h){ return !h.date_retrait; }).sort(function(a,b){ return a.hausse_ref.localeCompare(b.hausse_ref); });
-    var recoltees = r.hausses.filter(function(h){ return h.date_retrait; }).sort(function(a,b){ return new Date(b.date_retrait) - new Date(a.date_retrait); });
     var totalRuche = totalRucheCalc(r);
     var nbHausses  = r.hausses.length;
     var barPct     = maxTotal > 0 ? Math.round((totalRuche / maxTotal) * 100) : 0;
 
     html += '<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border-soft)">';
 
-    // Ligne synthétique
+    // Ligne synthétique : ruche | barre | total
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
     html += '<div style="min-width:80px;flex-shrink:0">';
     html += '<span style="font-size:12px;font-weight:700;color:var(--text)">' + r.ruche_id + '</span>';
@@ -3923,45 +4079,19 @@ function buildHaussesParRucheHtml(entries) {
     html += '<div style="text-align:right;flex-shrink:0;min-width:100px">';
     html += '<span style="font-family:DM Serif Display,serif;font-size:15px;color:var(--gold-light)">' + (totalRuche > 0 ? totalRuche.toFixed(1) + ' kg' : '—') + '</span>';
     html += '<span style="font-size:10px;color:var(--text-muted);margin-left:5px">' + nbHausses + ' hausse' + (nbHausses > 1 ? 's' : '') + '</span>';
-    html += '</div>';
-    html += '</div>';
+    html += '</div></div>';
 
-    // Détail : une ligne par hausse
-    r.hausses.sort(function(a,b){ return a.hausse_ref.localeCompare(b.hausse_ref); }).forEach(function(h) {
-      var isRecoltee = !!h.date_retrait;
-      var poids = poidsEstimeHausse(h);
-      var poidsStr = poids != null ? poids.toFixed(1) + ' kg' : '—';
-
-      // Couleur selon seuil (pour hausses en cours uniquement)
-      var barColor, bgColor, borderColor;
-      if (!isRecoltee && poids != null) {
-        if (poids >= 12) {
-          barColor = '#6ec06e'; bgColor = 'rgba(110,192,110,.08)'; borderColor = 'rgba(110,192,110,.3)';
-        } else if (poids >= 9) {
-          barColor = '#e8924a'; bgColor = 'rgba(232,146,74,.08)'; borderColor = 'rgba(232,146,74,.3)';
-        } else {
-          barColor = 'var(--gold)'; bgColor = 'rgba(200,168,75,.06)'; borderColor = 'rgba(200,168,75,.15)';
-        }
-      } else {
-        barColor = 'var(--text-dim)'; bgColor = 'rgba(255,255,255,.03)'; borderColor = 'transparent';
-      }
-
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;border-radius:6px;background:' + bgColor + ';border:1px solid ' + borderColor + '">';
-      html += '<div style="display:flex;align-items:center;gap:6px">';
-      html += '<span style="font-size:11px;font-weight:700;color:' + barColor + '">' + h.hausse_ref + '</span>';
-      if (isRecoltee) {
-        html += '<span style="font-size:10px;color:var(--text-muted)">retirée ' + fmtDate(h.date_retrait) + (h.variete ? ' · ' + h.variete : '') + '</span>';
-      } else {
-        html += '<span style="font-size:10px;color:var(--text-dim)">posée ' + fmtDate(h.date_pose) + (h.variete ? ' · ' + h.variete : '') + '</span>';
-      }
-      html += '</div>';
-      // Poids toujours affiché
-      html += '<div style="text-align:right">';
-      html += '<span style="font-family:DM Serif Display,serif;font-size:13px;color:' + (isRecoltee ? 'var(--gold-light)' : barColor) + ';font-weight:600">' + poidsStr + '</span>';
-      if (!isRecoltee) {
-        html += '<div style="font-size:9px;color:var(--text-muted)">estimé</div>';
-      }
-      html += '</div>';
+    // Détail : une ligne par hausse récoltée, triée par date décroissante
+    r.hausses.slice().sort(function(a,b){ return new Date(b.date_retrait) - new Date(a.date_retrait); }).forEach(function(h) {
+      var poids = parseFloat(h.poids_miel) || 0;
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:2px;border-radius:6px;background:rgba(255,255,255,.03)">';
+      html += '<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">';
+      html += '<span style="font-size:11px;font-weight:700;color:var(--gold);flex-shrink:0">' + h.hausse_ref + '</span>';
+      html += '<div style="min-width:0">';
+      html += '<div style="font-size:10px;color:var(--text-dim)">' + fmtDate(h.date_retrait) + (h.variete ? ' · ' + h.variete : '') + (h.num_lot ? ' · lot ' + h.num_lot : '') + '</div>';
+      if (h.colonie_nom) html += '<div style="font-size:9px;color:var(--text-muted)">👑 ' + h.colonie_nom + '</div>';
+      html += '</div></div>';
+      html += '<span style="font-family:DM Serif Display,serif;font-size:13px;color:var(--gold-light);font-weight:600;flex-shrink:0">' + (poids > 0 ? poids.toFixed(1) + ' kg' : '—') + '</span>';
       html += '</div>';
     });
 
@@ -3996,12 +4126,17 @@ function renderRecolte() {
     })
   ].sort((a,b) => new Date(b.date) - new Date(a.date));
 
-  // Vue hausses par ruche : toutes les hausses groupées par ruche
+  // Vue hausses par ruche : uniquement les hausses RÉCOLTÉES (historique)
   const haussesParRuche = {};
-  (DB.hausses || []).forEach(h => {
+  (DB.hausses || []).filter(h => h.date_retrait && h.poids_miel).forEach(h => {
     const ruche = DB.ruches.find(r => r.id === h.ruche_id);
+    // Trouver la colonie qui occupait la ruche au moment du retrait
+    const occRetrait = DB.occupations
+      ? DB.occupations.find(o => o.ruche_id === h.ruche_id && o.date_debut <= h.date_retrait && (!o.date_fin || o.date_fin >= h.date_retrait))
+      : DB.occupation_courante.find(o => o.ruche_id === h.ruche_id);
+    const colonie = occRetrait ? DB.colonies.find(c => c.id === occRetrait.colonie_id) : null;
     if (!haussesParRuche[h.ruche_id]) haussesParRuche[h.ruche_id] = { ruche_id: h.ruche_id, nom: ruche?.nom || '', hausses: [] };
-    haussesParRuche[h.ruche_id].hausses.push(h);
+    haussesParRuche[h.ruche_id].hausses.push({ ...h, colonie_nom: colonie?.nom || null });
   });
   // Trier les ruches par id numérique
   const haussesEntries = Object.values(haussesParRuche)
@@ -4047,6 +4182,19 @@ function renderRecolte() {
       <div class="form-title" style="margin-bottom:14px">📊 Comparaison par ruche</div>
       <canvas id="recolte-chart" style="width:100%;max-height:260px"></canvas>
     </div>` : ''}
+    ${(() => {
+      const lotsDispos = [...new Set((DB.hausses||[]).filter(h => h.date_retrait && h.num_lot).map(h => h.num_lot))].sort((a,b) => b.localeCompare(a));
+      const haussesRecoltees = (DB.hausses||[]).filter(h => h.date_retrait);
+      if (!haussesRecoltees.length) return '';
+      var selectHtml = lotsDispos.length
+        ? '<select id="sel-lot-pdf" style="flex:1;font-size:13px">' + lotsDispos.map(lot => '<option value="' + lot + '">' + lot + '</option>').join('') + '</select>'
+        : '<input type="text" id="sel-lot-pdf" placeholder="N° de lot (ex: 2026/01)" style="flex:1;font-size:13px">';
+      return '<div class="form-card"><div class="form-title" style="margin-bottom:10px">📄 Export document de récolte</div>'
+        + '<div style="display:flex;gap:8px;align-items:center">'
+        + selectHtml
+        + '<button onclick="exportRecoltesPDF(document.getElementById(\'sel-lot-pdf\').value)" style="padding:9px 14px;border-radius:var(--radius-sm);border:none;background:var(--gold);color:var(--bg);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">📄 Générer PDF</button>'
+        + '</div></div>';
+    })()}
   `;
 
   // Construire le graphique barre si au moins 2 entrées
