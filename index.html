@@ -1278,7 +1278,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.7.8</div>
+  <div class="splash-version">v2.8.0</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1437,7 +1437,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.7.8</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.8.0</div>
   </nav>
 
 </div><!-- /app -->
@@ -1650,7 +1650,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.7.8';
+const APP_VERSION = '2.8.0';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -2360,9 +2360,14 @@ function renderDashboard() {
     return s + Math.max(0, dernPoids - parseFloat(h.poids_ref) - autresRetrait);
   }, 0);
   const anneeEnCours = new Date().getFullYear().toString();
-  const totalMiel = DB.recoltes
+  // Total miel = récoltes manuelles + hausses récoltées cette année
+  const totalRecoltesManuelles = DB.recoltes
     .filter(r => r.semaine && r.semaine.startsWith(anneeEnCours))
-    .reduce((s,r) => s + (parseFloat(r.poids_miel) || 0), 0).toFixed(1);
+    .reduce((s,r) => s + (parseFloat(r.poids_miel) || 0), 0);
+  const totalHaussesAnnee = (DB.hausses || [])
+    .filter(h => h.date_retrait && h.date_retrait.startsWith(anneeEnCours) && h.poids_miel)
+    .reduce((s,h) => s + (parseFloat(h.poids_miel) || 0), 0);
+  const totalMiel = (totalRecoltesManuelles + totalHaussesAnnee).toFixed(1);
 
   // Stock actuel par variété
   const stockParVariete = {};
@@ -3641,7 +3646,7 @@ function renderProductionRetrait(hausseId) {
       + ' <span style="font-size:13px;font-weight:400;color:var(--text)">' + (ruche ? ruche.id + ' — ' + ruche.nom : h.ruche_id) + '</span></div>'
     + '<div style="font-size:11px;color:var(--text-muted)">Posée le ' + fmtDate(h.date_pose)
       + (occ ? ' · ' + (occ.colonie_nom || 'Colonie') : '') + '</div>'
-    + '<div style="font-size:11px;color:var(--text-muted)">Poids de référence : ' + parseFloat(h.poids_ref).toFixed(1) + ' kg</div>'
+
     + '</div>'
     + (mielsActif !== null ? '<div style="text-align:right"><div style="font-family:DM Serif Display,serif;font-size:22px;color:var(--gold)">~' + mielsActif + ' kg</div><div style="font-size:10px;color:var(--text-muted)">miel estimé</div></div>' : '')
     + '</div></div>'
@@ -3649,15 +3654,11 @@ function renderProductionRetrait(hausseId) {
     + '<div class="form-row">'
     + '<div class="form-group"><label class="field-label">Date de retrait</label>'
     + '<input type="date" id="f-retrait-date" value="' + todayISO() + '"></div>'
-    + '<div class="form-group"><label class="field-label">Poids ruche au retrait (kg)</label>'
-    + '<input type="number" id="f-retrait-poids" placeholder="ex: 38.5" step="0.1" min="0" inputmode="decimal"'
-    + (dernPoids !== null ? ' value="' + dernPoids.toFixed(1) + '"' : '') + ' oninput="calcMielRetrait()"></div>'
+    + '<div class="form-group"><label class="field-label">Poids de la hausse (kg) <span style="font-size:10px;color:var(--text-muted)">poids pesé directement</span></label>'
+    + '<input type="number" id="f-retrait-poids" placeholder="ex: 14.5" step="0.1" min="0" inputmode="decimal" oninput="calcMielRetrait()"></div>'
     + '</div>'
 
-    + '<div id="retrait-miel-calc" style="text-align:center;padding:10px;border-radius:10px;background:rgba(200,168,75,.08);margin-bottom:12px;display:none">'
-    + '<div style="font-size:11px;color:var(--text-muted)">Miel récolté</div>'
-    + '<div id="retrait-miel-val" style="font-family:DM Serif Display,serif;font-size:28px;font-weight:600;color:var(--gold)">— kg</div>'
-    + '</div>'
+
 
     + '<div class="form-row full"><div class="form-group"><label class="field-label">Produit</label>'
     + '<select id="f-retrait-variete"><option value="">— Non définie —</option>'
@@ -3693,28 +3694,7 @@ function renderProductionRetrait(hausseId) {
 }
 
 function calcMielRetrait() {
-  const pRetraitEl = document.getElementById('f-retrait-poids');
-  const calcEl = document.getElementById('retrait-miel-calc');
-  const valEl  = document.getElementById('retrait-miel-val');
-  const h = (DB.hausses || []).find(x => !x.date_retrait && document.getElementById('content-production')?.innerHTML.includes(x.id));
-
-  if (!pRetraitEl || !calcEl || !valEl) return;
-  const pRetrait = parseFloat(pRetraitEl.value);
-
-  // Trouver la hausse active affichée (celle dont le formulaire est ouvert)
-  const allActive = (DB.hausses || []).filter(x => !x.date_retrait);
-  const hausseId = document.querySelector('[onclick*="saveRetraitHausse"]')
-    ?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-  const hausse = (DB.hausses || []).find(x => x.id === hausseId);
-
-  if (!hausse || isNaN(pRetrait)) { calcEl.style.display = 'none'; return; }
-  const autresRetrait = (DB.hausses || [])
-    .filter(x => x.id !== hausse.id && x.ruche_id === hausse.ruche_id && x.date_retrait && x.date_retrait >= hausse.date_pose && x.poids_miel)
-    .reduce((s, x) => s + parseFloat(x.poids_miel), 0);
-  const miel = Math.max(0, pRetrait - parseFloat(hausse.poids_ref) - autresRetrait);
-  calcEl.style.display = 'block';
-  valEl.textContent = miel.toFixed(1) + ' kg';
-  valEl.style.color = miel >= 5 ? '#7ab85a' : miel >= 2 ? '#e08020' : 'var(--text-muted)';
+  // Le poids saisi est directement le poids du miel — rien à calculer
 }
 
 async function saveRetraitHausse(hausseId) {
@@ -3731,10 +3711,8 @@ async function saveRetraitHausse(hausseId) {
   if (!date_retrait)      { toast('Date de retrait requise', 'err'); return; }
   if (isNaN(poids_retrait)) { toast('Poids au retrait requis', 'err'); return; }
 
-  const autresRetraitSave = (DB.hausses || [])
-    .filter(x => x.id !== h.id && x.ruche_id === h.ruche_id && x.date_retrait && x.date_retrait >= h.date_pose && x.poids_miel)
-    .reduce((s, x) => s + parseFloat(x.poids_miel), 0);
-  const poids_miel = Math.max(0, poids_retrait - parseFloat(h.poids_ref) - autresRetraitSave);
+  // Le poids saisi est directement le poids du miel pesé dans la hausse
+  const poids_miel = poids_retrait;
   const num_lot = document.getElementById('f-retrait-lot')?.value || null;
   const update = { date_retrait, poids_retrait, poids_miel: parseFloat(poids_miel.toFixed(2)), variete, notes, num_lot };
 
