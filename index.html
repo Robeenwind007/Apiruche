@@ -321,6 +321,11 @@ body::after {
    ============================================================ */
 .screen { display: none; height: 100%; }
 .screen.active { display: block; }
+#map-rucher { z-index: 1; }
+.leaflet-popup-content-wrapper { background: #1a1a12 !important; border: 1px solid #c8a84b !important; border-radius: 10px !important; color: #e8e0c8 !important; box-shadow: 0 4px 20px rgba(0,0,0,.6) !important; }
+.leaflet-popup-tip { background: #1a1a12 !important; }
+.leaflet-popup-content { margin: 10px 14px !important; font-family: Inter, sans-serif !important; font-size: 12px !important; }
+.leaflet-popup-close-button { color: #c8a84b !important; font-size: 18px !important; }
 
 /* ============================================================
    MENU PRINCIPAL
@@ -1278,7 +1283,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.8.5</div>
+  <div class="splash-version">v2.9.0</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1328,6 +1333,9 @@ select option { background: var(--bg2); color: var(--cream); }
     <!-- ===== FICHE RUCHE ===== -->
     <div id="screen-ruche-detail" class="screen">
       <div id="content-ruche-detail"></div>
+    </div>
+    <div id="screen-carte" class="screen" style="padding:0;overflow:hidden">
+      <div id="map-rucher" style="width:100%;height:100%;min-height:400px"></div>
     </div>
 
     <!-- ===== COLONIES ===== -->
@@ -1437,7 +1445,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.8.5</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.9.0</div>
   </nav>
 
 </div><!-- /app -->
@@ -1650,7 +1658,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.8.5';
+const APP_VERSION = '2.9.0';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -2052,6 +2060,7 @@ function renderScreen(screen) {
   if (screen === 'dashboard') renderDashboard();
   if (screen === 'recolte')   renderRecolte();
   if (screen === 'stock')     renderStock();
+  if (screen === 'carte')     renderCarte();
   if (screen === 'production') renderProduction();
   if (screen === 'pesee')     renderPesee();
   if (screen === 'nourrir')   renderNourrir();
@@ -2079,6 +2088,7 @@ const MENU_SECTIONS = [
       { id: 'colonies', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="7" r="1" fill="currentColor" opacity="0.5"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>`,  label: 'Colonies',  screen: 'colonies' },
       { id: 'stock',    icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="10" width="14" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M6 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="13.5" r="1" fill="currentColor" opacity="0.6"/></svg></span>`,  label: 'Stock & Vente', screen: 'stock' },
       { id: 'production', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2c0 0-6 4-6 9a6 6 0 0012 0c0-5-6-9-6-9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7.5 13.5c.5-2 1.5-3.5 2.5-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/></svg></span>`, label: 'Production',   screen: 'production' },
+      { id: 'carte',      icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 2L2 4v14l5-2 6 2 5-2V4l-5 2-6-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 2v14M13 4v14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/></svg></span>`, label: 'Carte rucher', screen: 'carte' },
     ]
   },
   {
@@ -6075,6 +6085,142 @@ async function saveNouvelleColonie() {
 // ============================================================
 // FICHE RUCHE DÉTAIL
 // ============================================================
+// ============================================================
+// GPS & CARTE RUCHER
+// ============================================================
+
+async function captureGPS(rucheId) {
+  if (!navigator.geolocation) { toast('Géolocalisation non disponible', 'err'); return; }
+  toast('Capture GPS en cours...', 'ok');
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lat = parseFloat(pos.coords.latitude.toFixed(7));
+    const lng = parseFloat(pos.coords.longitude.toFixed(7));
+    const cfg = getConfig();
+    if (!cfg.url || !cfg.key) { toast('Configurez Supabase', 'err'); return; }
+    try {
+      const r = await fetch(cfg.url + '/rest/v1/ruches?id=eq.' + rucheId, {
+        method: 'PATCH',
+        headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ latitude: lat, longitude: lng })
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const ruche = DB.ruches.find(x => x.id === rucheId);
+      if (ruche) { ruche.latitude = lat; ruche.longitude = lng; }
+      saveCache();
+      addLog('UPDATE', 'ruches', rucheId + ' GPS ' + lat + ',' + lng);
+      toast('Position GPS enregistrée ✓ (' + lat.toFixed(5) + ', ' + lng.toFixed(5) + ')', 'ok');
+      renderRucheDetail(rucheId);
+    } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+  }, err => {
+    const msgs = { 1: 'Permission refusée', 2: 'Position indisponible', 3: 'Délai dépassé' };
+    toast('GPS : ' + (msgs[err.code] || err.message), 'err');
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+
+async function renderCarte() {
+  const el = document.getElementById('map-rucher');
+  if (!el) return;
+
+  // Charger Leaflet si pas encore chargé
+  if (!window.L) {
+    await new Promise((res, rej) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+      document.head.appendChild(link);
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  // Ruches avec GPS
+  const ruchesGPS = DB.ruches.filter(r => r.actif !== false && r.latitude && r.longitude);
+
+  if (!ruchesGPS.length) {
+    el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#9a9070;font-family:Inter,sans-serif">' +
+      '<div style="font-size:48px;margin-bottom:12px">📍</div>' +
+      '<div style="font-size:15px;font-weight:600;color:#e8e0c8;margin-bottom:6px">Aucune position GPS</div>' +
+      '<div style="font-size:12px;text-align:center;max-width:260px">Ouvrez la fiche d\'une ruche et tapez le bouton 📍 GPS pour enregistrer sa position</div>' +
+      '</div>';
+    return;
+  }
+
+  // Détruire la carte précédente si elle existe
+  if (window._leafletMap) { window._leafletMap.remove(); window._leafletMap = null; }
+
+  // Centrer sur le barycentre
+  const lat0 = ruchesGPS.reduce((s,r) => s + r.latitude, 0) / ruchesGPS.length;
+  const lng0 = ruchesGPS.reduce((s,r) => s + r.longitude, 0) / ruchesGPS.length;
+
+  const map = L.map('map-rucher', { zoomControl: true }).setView([lat0, lng0], 15);
+  window._leafletMap = map;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19
+  }).addTo(map);
+
+  ruchesGPS.forEach(r => {
+    const occ  = DB.occupation_courante.find(o => o.ruche_id === r.id);
+    const col  = occ ? DB.colonies.find(c => c.id === occ.colonie_id) : null;
+    const dern = DB.pesees.filter(p => p.ruche_id === r.id).sort((a,b) => new Date(b.semaine) - new Date(a.semaine))[0];
+    const haussesActives = (DB.hausses || []).filter(h => h.ruche_id === r.id && !h.date_retrait);
+    const nb_cadres = dern?.nb_cadres || 0;
+
+    // Couleur selon type de ruche
+    const couleur = (r.type_ruche && r.type_ruche.toLowerCase().includes('ruchette')) ? '#3a7abf' : '#c03030';
+
+    // Icône carrée personnalisée
+    const icon = L.divIcon({
+      className: '',
+      html: '<div style="width:28px;height:28px;background:' + couleur + ';border:2px solid #fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.5)">' + r.id + '</div>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+      popupAnchor: [0, -16]
+    });
+
+    // Couleur reine
+    const coulReine = { 'Verte':'#3a8a3a','Bleue':'#3a6ab0','Jaune':'#e6db0c','Rouge':'#a03030','Blanche':'#888' };
+    const dotCoul = col?.couleur_reine ? (coulReine[col.couleur_reine] || '#666') : null;
+
+    // Popup
+    let popup = '<div style="min-width:180px">';
+    popup += '<div style="font-family:DM Serif Display,serif;font-size:16px;font-weight:700;color:#c8a84b;margin-bottom:6px">' + r.nom + '</div>';
+    popup += '<div style="display:flex;flex-direction:column;gap:4px;font-size:12px">';
+    popup += '<div><span style="color:#9a9070">Ruche :</span> <b>' + r.id + '</b>' + (r.type_ruche ? ' · ' + r.type_ruche : '') + '</div>';
+    if (col) {
+      popup += '<div><span style="color:#9a9070">Colonie :</span> <b>' + (col.nom || '—') + '</b>';
+      if (col.couleur_reine && dotCoul) popup += ' <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + dotCoul + ';margin-left:4px;vertical-align:middle"></span> ' + col.couleur_reine;
+      popup += '</div>';
+      if (col.gentillesse) popup += '<div><span style="color:#9a9070">Gentillesse :</span> ' + '⭐'.repeat(Math.round(col.gentillesse)) + '</div>';
+    } else {
+      popup += '<div style="color:#9a9070;font-style:italic">Ruche vide</div>';
+    }
+    if (nb_cadres) popup += '<div><span style="color:#9a9070">Cadres (dern. pesée) :</span> <b>' + nb_cadres + '</b></div>';
+    if (haussesActives.length) {
+      popup += '<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">';
+      haussesActives.forEach(h => {
+        popup += '<span style="padding:2px 7px;border-radius:4px;background:rgba(200,168,75,.2);border:1px solid #c8a84b;font-size:11px;font-weight:700;color:#c8a84b">🍯 ' + h.hausse_ref + '</span>';
+      });
+      popup += '</div>';
+    }
+    popup += '</div></div>';
+
+    L.marker([r.latitude, r.longitude], { icon }).addTo(map).bindPopup(popup);
+  });
+
+  // Ajuster la vue sur toutes les ruches
+  if (ruchesGPS.length > 1) {
+    const bounds = L.latLngBounds(ruchesGPS.map(r => [r.latitude, r.longitude]));
+    map.fitBounds(bounds, { padding: [30, 30] });
+  }
+
+  // Rafraîchir la taille après rendu
+  setTimeout(() => map.invalidateSize(), 100);
+}
+
 function renderRucheDetail(rucheId) {
   const el = document.getElementById('content-ruche-detail');
   if (!el) return;
@@ -6149,6 +6295,9 @@ function renderRucheDetail(rucheId) {
         </button>
         <button class="action-rapide-btn" onclick="navigateAction('recolte','${ruche.id}')">
           <span class="icon">🍯</span><span class="label">Récolte</span>
+        </button>
+        <button class="action-rapide-btn" onclick="captureGPS('${ruche.id}')">
+          <span class="icon">📍</span><span class="label">${ruche.latitude ? 'GPS ✓' : 'GPS'}</span>
         </button>
       </div>
     </div>
