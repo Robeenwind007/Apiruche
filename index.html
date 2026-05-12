@@ -1283,7 +1283,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.9.0</div>
+  <div class="splash-version">v2.9.2</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1445,7 +1445,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.9.0</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.9.2</div>
   </nav>
 
 </div><!-- /app -->
@@ -1658,7 +1658,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.9.0';
+const APP_VERSION = '2.9.2';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -6175,7 +6175,7 @@ async function renderCarte() {
     // Icône carrée personnalisée
     const icon = L.divIcon({
       className: '',
-      html: '<div style="width:28px;height:28px;background:' + couleur + ';border:2px solid #fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.5)">' + r.id + '</div>',
+      html: '<div style="width:28px;height:28px;background:' + couleur + ';border:2px solid #fff;border-radius:5px;box-shadow:0 2px 8px rgba(0,0,0,.5)"></div>',
       iconSize: [28, 28],
       iconAnchor: [14, 14],
       popupAnchor: [0, -16]
@@ -6219,6 +6219,39 @@ async function renderCarte() {
 
   // Rafraîchir la taille après rendu
   setTimeout(() => map.invalidateSize(), 100);
+
+  // Géolocalisation automatique : position actuelle du terminal
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      const myLat = pos.coords.latitude;
+      const myLng = pos.coords.longitude;
+
+      // Marqueur "Vous êtes ici" avec cercle de précision
+      const accuracy = pos.coords.accuracy;
+      L.circle([myLat, myLng], {
+        radius: accuracy,
+        color: '#4a90d9',
+        fillColor: '#4a90d9',
+        fillOpacity: 0.1,
+        weight: 1
+      }).addTo(map);
+
+      const moi = L.divIcon({
+        className: '',
+        html: '<div style="width:16px;height:16px;background:#4a90d9;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.5)"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+        popupAnchor: [0, -10]
+      });
+      L.marker([myLat, myLng], { icon: moi })
+        .addTo(map)
+        .bindPopup('<div style="font-size:12px;color:#4a90d9;font-weight:700">📍 Vous êtes ici</div><div style="font-size:10px;color:#9a9070">Précision : ±' + Math.round(accuracy) + ' m</div>');
+
+      // Si une seule ruche ou pas de ruches, centrer sur la position actuelle
+      if (ruchesGPS.length <= 1) map.setView([myLat, myLng], 16);
+
+    }, null, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+  }
 }
 
 function renderRucheDetail(rucheId) {
