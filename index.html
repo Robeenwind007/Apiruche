@@ -113,9 +113,8 @@ body.light .splash-cta {
   color: var(--gold);
 }
 
-body.light .alerte-banner,
 body.light #alerte-banner {
-  background: #fdf5e0;
+  background: #3a2e10;
   border-bottom-color: var(--gold);
 }
 
@@ -1283,7 +1282,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v2.9.4</div>
+  <div class="splash-version">v3.0.1</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1445,7 +1444,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v2.9.4</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.0.1</div>
   </nav>
 
 </div><!-- /app -->
@@ -1658,7 +1657,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '2.9.4';
+const APP_VERSION = '3.0.1';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -1748,9 +1747,11 @@ function checkAlertesDemarrage() {
         '<div style="font-size:13px;font-weight:700;color:#fff">' + a.nom + '</div>' +
         '<div style="font-size:11px;color:rgba(255,255,255,.7)">' + a.action + (a.diff !== null ? ' · <strong style="color:' + a.couleur + '">' + a.diff + 'j</strong>' : '') + '</div>' +
         '<div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">' + a.label + '</div>' +
-        '<label style="display:flex;align-items:center;gap:6px;margin-top:6px;cursor:pointer;user-select:none">' +
-          '<input type="checkbox" id="' + uid + '" data-key="' + key + '" onclick="event.stopPropagation()" onchange="saveSnoozeImmediately(this)" style="accent-color:#c8a84b;width:16px;height:16px;cursor:pointer;position:relative;z-index:10001">' +
-          '<span style="font-size:11px;color:rgba(255,255,255,.45)">Ne plus afficher</span>' +
+        '<label style="display:flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer">' +
+          '<span style="font-size:11px;color:rgba(255,255,255,.5)">Ne plus afficher</span>' +
+          '<div id="' + uid + '" data-key="' + key + '" data-on="0" onclick="toggleSnooze(this)" style="width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);cursor:pointer;position:relative;flex-shrink:0;transition:background .2s">' +
+            '<span style="display:block;width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:1px;left:0;transform:translateX(2px);transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)"></span>' +
+          '</div>' +
         '</label>' +
       '</div>' +
     '</div>';
@@ -1773,20 +1774,55 @@ function checkAlertesDemarrage() {
     const current = JSON.parse(localStorage.getItem(SNOOZE_KEY) || '[]');
     visibles.forEach(a => {
       const uid = 'snooze_' + alerteKey(a).replace(/[^a-zA-Z0-9]/g, '_');
-      const cb = document.getElementById(uid);
-      if (cb && cb.checked && !current.includes(alerteKey(a))) current.push(alerteKey(a));
+      const toggle = document.getElementById(uid);
+      if (toggle && toggle.dataset.on === '1' && !current.includes(alerteKey(a))) current.push(alerteKey(a));
     });
     localStorage.setItem(SNOOZE_KEY, JSON.stringify(current));
-    banner.remove();
+    document.getElementById('alerte-overlay')?.remove();
   };
   banner.appendChild(closeBtn);
-  Object.assign(banner.style, {
-    position: 'fixed', top: '0', left: '0', right: '0', zIndex: '10000',
-    background: getComputedStyle(document.body).getPropertyValue('--bg2').trim() || '#1a1206', borderBottom: '2px solid ' + (getComputedStyle(document.body).getPropertyValue('--gold').trim() || '#c8a84b') + ',',
-    padding: '14px 16px', boxShadow: '0 4px 24px rgba(0,0,0,.6)',
-    animation: 'toastIn .3s ease'
+  // Overlay sombre derrière la modal
+  const overlay = document.createElement('div');
+  overlay.id = 'alerte-overlay';
+  Object.assign(overlay.style, {
+    position: 'fixed', inset: '0', background: 'rgba(0,0,0,.7)',
+    zIndex: '10001', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', padding: '20px'
   });
-  document.body.appendChild(banner);
+
+  // Modal centrée
+  Object.assign(banner.style, {
+    background: '#1a1206', border: '2px solid #c8a84b',
+    borderRadius: '14px', padding: '20px 18px',
+    boxShadow: '0 8px 40px rgba(0,0,0,.8)',
+    width: '100%', maxWidth: '440px',
+    maxHeight: '80vh', overflowY: 'auto',
+    position: 'relative', zIndex: '10002'
+  });
+
+  overlay.appendChild(banner);
+  document.body.appendChild(overlay);
+  closeBtn.onclick = () => overlay.remove();
+}
+
+function toggleSnooze(el) {
+  const isOn = el.dataset.on === '1';
+  const newOn = !isOn;
+  el.dataset.on = newOn ? '1' : '0';
+  el.style.background = newOn ? '#c8a84b' : 'rgba(255,255,255,.15)';
+  el.querySelector('span').style.transform = newOn ? 'translateX(18px)' : 'translateX(2px)';
+  // Sauvegarder immédiatement dans localStorage
+  const key = el.dataset.key;
+  if (!key) return;
+  const SNOOZE_KEY = 'ruches_alertes_snooze';
+  const current = JSON.parse(localStorage.getItem(SNOOZE_KEY) || '[]');
+  if (newOn && !current.includes(key)) {
+    current.push(key);
+  } else if (!newOn) {
+    const idx = current.indexOf(key);
+    if (idx !== -1) current.splice(idx, 1);
+  }
+  localStorage.setItem(SNOOZE_KEY, JSON.stringify(current));
 }
 
 function saveSnoozeImmediately(checkbox) {
@@ -4301,50 +4337,64 @@ function renderRecolte() {
       const ctx = canvas.getContext('2d');
       const dpr = window.devicePixelRatio || 1;
       const W = canvas.parentElement.clientWidth - 32;
-      const barH = 36, gap = 10, padLeft = 0, padTop = 10, padBottom = 10;
-      const chartH = entries.length * (barH + gap) + padTop + padBottom;
+
+      // Couleurs adaptées au thème
+      const isLight = document.body.classList.contains('light');
+      const gold      = '#c8a84b';
+      const goldLight = isLight ? '#7a5010' : '#e0c070';
+      const muted     = isLight ? '#8a7040' : '#9a9070';
+      const bgBar     = isLight ? 'rgba(0,0,0,.1)' : 'rgba(255,255,255,.07)';
+      const textMain  = isLight ? '#1a1000' : '#e8e0c8';
+
+      // Hauteur : label (13px) + espace (4px) + barre (12px) + gap (14px)
+      const rowH = 43, padTop = 6, padBottom = 6;
+      const valW = 52; // largeur réservée pour la valeur à droite
+      const barZone = W - valW - 4;
+      const chartH = entries.length * rowH + padTop + padBottom;
+
       canvas.width  = W * dpr;
       canvas.height = chartH * dpr;
       canvas.style.width  = W + 'px';
       canvas.style.height = chartH + 'px';
       ctx.scale(dpr, dpr);
 
-      const gold = '#c8a84b', goldLight = '#e0c070', muted = '#6b6b4a', bg2 = '#1a1a12';
-
       entries.forEach((e, i) => {
-        const y = padTop + i * (barH + gap);
-        const barW = maxVal > 0 ? Math.round((e.total / maxVal) * (W - padLeft - 70)) : 0;
+        const y = padTop + i * rowH;
+        const barW = maxVal > 0 ? Math.round((e.total / maxVal) * barZone) : 0;
+        const parts = e.label.split('\n');
+
+        // Label ruche (ligne 1)
+        ctx.fillStyle = textMain;
+        ctx.font = '600 11px Inter, sans-serif';
+        ctx.fillText(parts[0], 0, y + 11);
+
+        // Label colonie (ligne 2, inline après un tiret)
+        if (parts[1]) {
+          const ruche1W = ctx.measureText(parts[0]).width;
+          ctx.fillStyle = muted;
+          ctx.font = '10px Inter, sans-serif';
+          ctx.fillText(' — ' + parts[1], ruche1W, y + 11);
+        }
 
         // Fond barre
-        ctx.fillStyle = bg2;
+        ctx.fillStyle = bgBar;
         ctx.beginPath();
-        ctx.roundRect(padLeft, y + 18, W - padLeft - 70, 14, 4);
+        ctx.roundRect(0, y + 16, barZone, 12, 3);
         ctx.fill();
 
         // Barre valeur
         if (barW > 0) {
           ctx.fillStyle = gold;
           ctx.beginPath();
-          ctx.roundRect(padLeft, y + 18, barW, 14, 4);
+          ctx.roundRect(0, y + 16, barW, 12, 3);
           ctx.fill();
         }
 
-        // Label ruche + colonie (deux lignes)
-        const parts = e.label.split('\n');
-        ctx.fillStyle = '#e8e0c8';
-        ctx.font = '600 11px Inter, sans-serif';
-        ctx.fillText(parts[0], padLeft, y + 12);
-        if (parts[1]) {
-          ctx.fillStyle = muted;
-          ctx.font = '10px Inter, sans-serif';
-          ctx.fillText(parts[1], padLeft, y + 13 + 11);
-        }
-
-        // Valeur à droite
+        // Valeur à droite de la barre
         ctx.fillStyle = goldLight;
-        ctx.font = '600 13px DM Serif Display, serif';
+        ctx.font = '700 11px Inter, sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(e.total.toFixed(1) + ' kg', W, y + 28);
+        ctx.fillText(e.total.toFixed(1) + ' kg', W, y + 26);
         ctx.textAlign = 'left';
       });
     }
