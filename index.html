@@ -1282,7 +1282,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v3.0.4</div>
+  <div class="splash-version">v3.0.6</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1444,7 +1444,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.0.4</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.0.6</div>
   </nav>
 
 </div><!-- /app -->
@@ -1657,7 +1657,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '3.0.4';
+const APP_VERSION = '3.0.6';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -6718,42 +6718,6 @@ function renderRucheDetail(rucheId) {
     <div class="fiche-section" style="padding-top:0">
       <div class="fiche-section-title">Dernières pesées</div>
       <div class="fiche-card" style="padding-bottom:8px">
-        ${(() => {
-          const vals = pesees.map(p => p.pesee ? parseFloat(p.pesee) : p.demi_pesee ? p.demi_pesee * 2 : null).filter(v => v !== null).reverse();
-          const W = 300, H = 70, padX = 8, padY = 14;
-          const minV = Math.min(...vals) * 0.97;
-          const maxV = Math.max(...vals) * 1.03;
-          const range = maxV - minV || 1;
-          const xs = vals.map((_, i) => padX + i * (W - padX*2) / Math.max(vals.length - 1, 1));
-          const ys = vals.map(v => H - padY - (v - minV) / range * (H - padY*2));
-          const pts = xs.map((x, i) => `${x},${ys[i]}`).join(' ');
-          const area = `${xs[0]},${H} ` + pts + ` ${xs[xs.length-1]},${H}`;
-          const peseesSorted = pesees.slice().reverse();
-          const dots = vals.map((v, i) => {
-            const isLast = i === vals.length - 1;
-            const col = couleurPoidsCadre(v, peseesSorted[i]?.nb_cadres);
-            return `
-              <circle cx="${xs[i]}" cy="${ys[i]}" r="${isLast ? 3 : 2}" fill="${col}" opacity="${isLast ? 1 : 0.7}"/>
-              ${isLast ? `<text x="${xs[i]}" y="${ys[i]-6}" text-anchor="middle" font-size="8" font-weight="600" fill="${col}">${v.toFixed(1)}</text>` : ''}
-            `;
-          }).join('');
-          const labels = peseesSorted.map((p, i) => {
-            const isLast = i === vals.length - 1;
-            return `<text x="${xs[i]}" y="${H+11}" text-anchor="middle" font-size="${isLast ? 8 : 7}" fill="rgba(255,255,255,${isLast ? '.5' : '.25'})">${fmtDate(p.semaine).slice(0,5)}</text>`;
-          }).join('');
-          return `<svg viewBox="0 0 ${W} ${H+16}" style="width:100%;overflow:visible;display:block;margin-bottom:6px">
-            <defs>
-              <linearGradient id="grad-pesee" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#c8a84b" stop-opacity="0.15"/>
-                <stop offset="100%" stop-color="#c8a84b" stop-opacity="0"/>
-              </linearGradient>
-            </defs>
-            <polygon points="${area}" fill="url(#grad-pesee)"/>
-            <polyline points="${pts}" fill="none" stroke="#c8a84b" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="0.8"/>
-            ${dots}
-            ${labels}
-          </svg>`;
-        })()}
         ${pesees.map(p => `
           <div class="historique-item">
             <div>
@@ -6859,8 +6823,162 @@ function renderRucheDetail(rucheId) {
       </div>
     </div>` : ''}
 
+    <!-- Rapport évolution poids -->
+    <div class="fiche-section" style="padding-top:0">
+      <div class="fiche-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="fiche-section-title" style="margin:0">📊 Évolution du poids</div>
+          <button onclick="exportPoidsRuchePDF('${rucheId}')"
+            style="padding:6px 12px;border-radius:8px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:11px;font-weight:600;cursor:pointer">
+            📄 Exporter PDF
+          </button>
+        </div>
+        ${(() => {
+          const pSorted = pesees.slice().reverse(); // chronologique
+          if (pSorted.length < 2) return '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px 0">Au moins 2 pesées nécessaires</div>';
+          const vals = pSorted.map(p => p.pesee != null ? parseFloat(p.pesee) : parseFloat(p.demi_pesee||0)*2);
+          const minV = Math.min(...vals), maxV = Math.max(...vals);
+          const W = 300, H = 100, pad = 10;
+          const range = maxV - minV || 1;
+          const xs = vals.map((_, i) => pad + i * (W - 2*pad) / (vals.length - 1));
+          const ys = vals.map(v => H - pad - ((v - minV) / range) * (H - 2*pad));
+          const pts = xs.map((x, i) => x + ',' + ys[i]).join(' ');
+          const area = xs[0] + ',' + H + ' ' + pts + ' ' + xs[xs.length-1] + ',' + H;
+          const isLight = document.body.classList.contains('light');
+          const textCol = isLight ? 'rgba(0,0,0,.4)' : 'rgba(255,255,255,.35)';
+          const gridCol = isLight ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.06)';
+          // Labels dates + valeurs
+          const labDates = pSorted.map((p, i) => {
+            if (i % Math.ceil(pSorted.length/5) !== 0 && i !== pSorted.length-1) return '';
+            return '<text x="' + xs[i] + '" y="' + (H+13) + '" text-anchor="middle" font-size="7" fill="' + textCol + '">' + fmtDate(p.semaine).slice(0,5) + '</text>';
+          }).join('');
+          const labVals = vals.map((v, i) => {
+            if (i % Math.ceil(vals.length/5) !== 0 && i !== vals.length-1) return '';
+            return '<text x="' + xs[i] + '" y="' + (ys[i]-5) + '" text-anchor="middle" font-size="8" font-weight="600" fill="#c8a84b">' + v.toFixed(1) + '</text>';
+          }).join('');
+          // Ligne min/max
+          const yMin = H - pad, yMax = pad;
+          return '<svg viewBox="0 0 ' + W + ' ' + (H+18) + '" style="width:100%;overflow:visible;display:block">'
+            + '<line x1="' + pad + '" y1="' + yMin + '" x2="' + (W-pad) + '" y2="' + yMin + '" stroke="' + gridCol + '" stroke-width="1"/>'
+            + '<polygon points="' + area + '" fill="rgba(200,168,75,.1)"/>'
+            + '<polyline points="' + pts + '" fill="none" stroke="#c8a84b" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>'
+            + vals.map((v,i) => '<circle cx="' + xs[i] + '" cy="' + ys[i] + '" r="3" fill="#c8a84b"/>').join('')
+            + labVals + labDates
+            + '</svg>';
+        })()}
+      </div>
+    </div>
+
     <div style="height:16px"></div>
   `;
+}
+
+function exportPoidsRuchePDF(rucheId) {
+  const ruche = DB.ruches.find(r => r.id === rucheId);
+  if (!ruche) return;
+  const occ  = DB.occupation_courante.find(o => o.ruche_id === rucheId);
+  const col  = occ ? DB.colonies.find(c => c.id === occ.colonie_id) : null;
+
+  // Pesées de la ruche depuis le début de l'occupation courante, triées chronologiquement
+  const debutOcc = occ?.date_debut || '2000-01-01';
+  const pesees = DB.pesees
+    .filter(p => p.ruche_id === rucheId && p.semaine >= debutOcc)
+    .sort((a,b) => a.semaine.localeCompare(b.semaine));
+
+  if (!pesees.length) { toast('Aucune pesée pour cette ruche', 'err'); return; }
+
+  const vals  = pesees.map(p => p.pesee != null ? parseFloat(p.pesee) : parseFloat(p.demi_pesee||0)*2);
+  const minV  = Math.min(...vals), maxV = Math.max(...vals);
+  const range = maxV - minV || 1;
+
+  // Générer le SVG du graphique (600x200)
+  const W = 560, H = 160, pad = 30, padB = 40;
+  const xs = vals.map((_, i) => pad + i * (W - 2*pad) / Math.max(vals.length-1, 1));
+  const ys = vals.map(v => pad + (1 - (v - minV) / range) * (H - 2*pad));
+  const pts = xs.map((x, i) => x + ',' + ys[i]).join(' ');
+  const area = xs[0] + ',' + (H+padB-10) + ' ' + pts + ' ' + xs[xs.length-1] + ',' + (H+padB-10);
+
+  // Grilles horizontales
+  const nGrids = 4;
+  const grids = Array.from({length: nGrids+1}, (_, i) => {
+    const v = minV + (maxV - minV) * i / nGrids;
+    const y = pad + (1 - i/nGrids) * (H - 2*pad);
+    return '<line x1="' + pad + '" y1="' + y + '" x2="' + (W-pad) + '" y2="' + y + '" stroke="#e8d890" stroke-width="0.5" stroke-dasharray="3,3"/>'
+      + '<text x="' + (pad-4) + '" y="' + (y+4) + '" text-anchor="end" font-size="8" fill="#6b5020">' + v.toFixed(1) + '</text>';
+  }).join('');
+
+  // Labels dates (max 8)
+  const step = Math.ceil(pesees.length / 8);
+  const labDates = pesees.map((p, i) => {
+    if (i % step !== 0 && i !== pesees.length-1) return '';
+    return '<text x="' + xs[i] + '" y="' + (H+padB-22) + '" text-anchor="middle" font-size="7" fill="#6b5020" transform="rotate(-30,' + xs[i] + ',' + (H+padB-22) + ')">' + fmtDate(p.semaine).slice(0,5) + '</text>';
+  }).join('');
+
+  // Valeurs sur les points
+  const labVals = vals.map((v, i) => {
+    if (i % step !== 0 && i !== vals.length-1) return '';
+    return '<text x="' + xs[i] + '" y="' + (ys[i]-7) + '" text-anchor="middle" font-size="8" font-weight="700" fill="#c8a84b">' + v.toFixed(1) + '</text>';
+  }).join('');
+
+  const dots = vals.map((v, i) => '<circle cx="' + xs[i] + '" cy="' + ys[i] + '" r="3.5" fill="#c8a84b" stroke="#fff" stroke-width="1"/>').join('');
+
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + (H+padB) + '" width="' + W + '" height="' + (H+padB) + '">'
+    + '<rect width="' + W + '" height="' + (H+padB) + '" fill="#fdfaf0" rx="6"/>'
+    + grids
+    + '<polygon points="' + area + '" fill="rgba(200,168,75,.15)"/>'
+    + '<polyline points="' + pts + '" fill="none" stroke="#c8a84b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
+    + dots + labVals + labDates
+    + '</svg>';
+
+  const api = DB.fiche_apiculteur?.[0] || {};
+  const html = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Rapport poids ${ruche.nom}</title>
+<style>
+  body { font-family: Arial, sans-serif; color: #1a1000; background: #fff; margin: 0; padding: 20px; }
+  .header { background: #c8a84b; color: #1a1000; padding: 18px 24px; border-radius: 10px; margin-bottom: 16px; }
+  .header h1 { margin: 0 0 2px; font-size: 20px; }
+  .header p { margin: 0; font-size: 12px; }
+  .meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; }
+  .info { background: #f9f4e8; border: 1px solid #e0c870; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; display: flex; gap: 24px; }
+  .chart { background: #fdfaf0; border: 1px solid #e8d890; border-radius: 10px; padding: 16px; margin-bottom: 16px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  thead tr { background: #c8a84b; color: #1a1000; }
+  thead th { padding: 7px 8px; text-align: left; font-weight: 700; }
+  tbody tr:nth-child(even) { background: #fdf5e0; }
+  tbody tr:nth-child(odd) { background: #fff; }
+  tbody td { padding: 6px 8px; border-bottom: 1px solid #e8d890; }
+  .stats { display: flex; gap: 16px; margin-bottom: 14px; }
+  .stat { background: #f9f4e8; border: 1px solid #e0c870; border-radius: 8px; padding: 10px 14px; flex: 1; text-align: center; }
+  .stat-val { font-size: 18px; font-weight: 700; color: #c8a84b; }
+  .stat-lbl { font-size: 10px; color: #6b5020; margin-top: 2px; }
+  @media print { body { padding: 0; } }
+</style></head><body>
+<div class="header">
+  <h1>Principaute de Cordemais</h1>
+  <p>Évolution du poids — ${ruche.id} ${ruche.nom}</p>
+  <div class="meta">
+    <span>Colonie : ${col?.nom || '—'} · Depuis le ${fmtDate(debutOcc)}</span>
+    <span>Généré le ${fmtDate(todayISO())}</span>
+  </div>
+</div>
+${api.nom || api.prenom ? '<div class="info"><span><strong>' + [api.prenom, api.nom].filter(Boolean).join(' ') + '</strong>' + (api.napi ? ' · NAPI : ' + api.napi : '') + '</span></div>' : ''}
+<div class="stats">
+  <div class="stat"><div class="stat-val">${minV.toFixed(1)} kg</div><div class="stat-lbl">Minimum</div></div>
+  <div class="stat"><div class="stat-val">${maxV.toFixed(1)} kg</div><div class="stat-lbl">Maximum</div></div>
+  <div class="stat"><div class="stat-val">${(vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(1)} kg</div><div class="stat-lbl">Moyenne</div></div>
+  <div class="stat"><div class="stat-val">${pesees.length}</div><div class="stat-lbl">Pesées</div></div>
+</div>
+<div class="chart">${svg}</div>
+<table>
+  <thead><tr><th>Date</th><th>Poids total (kg)</th><th>Cadres</th><th>Hausses</th></tr></thead>
+  <tbody>${pesees.map((p,i) => '<tr><td>' + fmtDate(p.semaine) + '</td><td><strong>' + vals[i].toFixed(1) + '</strong></td><td>' + (p.nb_cadres||'—') + '</td><td>' + (p.nb_hausse||'—') + '</td></tr>').join('')}</tbody>
+</table>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 600);
 }
 
 function navigateRuche(dir) {
