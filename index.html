@@ -1282,7 +1282,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v3.0.1</div>
+  <div class="splash-version">v3.0.4</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1444,7 +1444,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.0.1</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.0.4</div>
   </nav>
 
 </div><!-- /app -->
@@ -1657,7 +1657,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '3.0.1';
+const APP_VERSION = '3.0.4';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -2716,6 +2716,18 @@ function renderPesee() {
       </div>
     </div>
     <div id="pesee-historique"></div>
+    <div class="form-card">
+      <div class="form-title">📄 Rapport pesées</div>
+      <div class="form-row">
+        <div class="form-group"><label class="field-label">Du</label>
+          <input type="date" id="f-rapport-pesee-debut" value="${new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0,10)}">
+        </div>
+        <div class="form-group"><label class="field-label">Au</label>
+          <input type="date" id="f-rapport-pesee-fin" value="${todayISO()}">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="exportPeseesPDF()">📄 Générer le rapport PDF</button>
+    </div>
   `;
   // Historique pesées
   renderPeseeHistorique();
@@ -3011,7 +3023,8 @@ function renderNourrir() {
     + '<div id="nourrir-ruches-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:4px"></div>'
     + '</div></div>'
     + '<button class="btn btn-primary btn-full" onclick="saveNourrir()">💾 Enregistrer</button>'
-    + '</div>';
+    + '</div>'
+    + buildRapportBloc('f-rapport-nourr-debut','f-rapport-nourr-fin','exportNourrissementsPDF');
 
   const listEl = document.getElementById('nourrir-ruches-list');
   ruchesActives.forEach(r => {
@@ -3118,7 +3131,8 @@ function renderSoigner() {
     + '<div id="soigner-ruches-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:4px"></div>'
     + '</div></div>'
     + '<button class="btn btn-primary btn-full" onclick="saveSoigner()">💾 Enregistrer</button>'
-    + '</div>';
+    + '</div>'
+    + buildRapportBloc('f-rapport-trait-debut','f-rapport-trait-fin','exportTraitementsPDF');
 
   const listEl = document.getElementById('soigner-ruches-list');
   ruchesActives.forEach(r => {
@@ -3150,6 +3164,146 @@ function renderSoigner() {
     });
     listEl.appendChild(card);
   });
+}
+
+function exportRapportPDF(titre, sousTitre, colonnes, lignes, periode) {
+  if (!lignes.length) { toast('Aucune donnée sur cette période', 'err'); return; }
+  const api = DB.fiche_apiculteur?.[0] || {};
+  const html = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>${titre}</title>
+<style>
+  body { font-family: Arial, sans-serif; color: #1a1000; background: #fff; margin: 0; padding: 20px; }
+  .header { background: #c8a84b; color: #1a1000; padding: 18px 24px; border-radius: 10px; margin-bottom: 16px; }
+  .header h1 { margin: 0 0 2px; font-size: 20px; }
+  .header p { margin: 0; font-size: 12px; opacity: .8; }
+  .meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; }
+  .apiculteur { background: #f9f4e8; border: 1px solid #e0c870; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; }
+  .periode { font-size: 12px; color: #6b5020; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  thead tr { background: #c8a84b; color: #1a1000; }
+  thead th { padding: 7px 8px; text-align: left; font-weight: 700; }
+  tbody tr:nth-child(even) { background: #fdf5e0; }
+  tbody tr:nth-child(odd) { background: #fff; }
+  tbody td { padding: 6px 8px; border-bottom: 1px solid #e8d890; vertical-align: top; }
+  .total { text-align: right; margin-top: 10px; font-size: 12px; color: #6b5020; font-weight: 600; }
+  @media print { body { padding: 0; } }
+</style></head><body>
+<div class="header">
+  <h1>Principaute de Cordemais</h1>
+  <p>${sousTitre}</p>
+  <div class="meta">
+    <span>${periode}</span>
+    <span>Généré le ${fmtDate(todayISO())}</span>
+  </div>
+</div>
+${api.nom || api.prenom ? `<div class="apiculteur"><strong>${[api.prenom, api.nom].filter(Boolean).join(' ')}</strong>${api.napi ? ' · NAPI : ' + api.napi : ''}${api.adresse ? '<br>' + api.adresse : ''}</div>` : ''}
+<div class="periode">${lignes.length} enregistrement${lignes.length > 1 ? 's' : ''}</div>
+<table>
+  <thead><tr>${colonnes.map(c => '<th>' + c + '</th>').join('')}</tr></thead>
+  <tbody>${lignes.map(l => '<tr>' + l.map(c => '<td>' + (c || '—') + '</td>').join('') + '</tr>').join('')}</tbody>
+</table>
+<div class="total">${lignes.length} ligne${lignes.length > 1 ? 's' : ''} au total</div>
+</body></html>`;
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 500);
+}
+
+function buildRapportBloc(idDebut, idFin, onclickFn, defaultDebut) {
+  const debut = defaultDebut || new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0,10);
+  return '<div class="form-card">'
+    + '<div class="form-title">📄 Rapport</div>'
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="field-label">Du</label>'
+    + '<input type="date" id="' + idDebut + '" value="' + debut + '"></div>'
+    + '<div class="form-group"><label class="field-label">Au</label>'
+    + '<input type="date" id="' + idFin + '" value="' + todayISO() + '"></div>'
+    + '</div>'
+    + '<button class="btn btn-primary btn-full" onclick="' + onclickFn + '()">📄 Générer le rapport PDF</button>'
+    + '</div>';
+}
+
+function exportTraitementsPDF() {
+  const debut = document.getElementById('f-rapport-trait-debut')?.value;
+  const fin   = document.getElementById('f-rapport-trait-fin')?.value;
+  if (!debut || !fin) { toast('Sélectionnez les dates', 'err'); return; }
+  const lignes = DB.traitements
+    .filter(t => t.semaine >= debut && t.semaine <= fin)
+    .sort((a,b) => a.semaine.localeCompare(b.semaine))
+    .map(t => {
+      const ruche = DB.ruches.find(r => r.id === t.ruche_id);
+      const occ   = (DB.occupations||[]).find(o => o.ruche_id === t.ruche_id && o.date_debut <= t.semaine && (!o.date_fin || o.date_fin >= t.semaine))
+                 || DB.occupation_courante.find(o => o.ruche_id === t.ruche_id);
+      const col   = occ ? DB.colonies.find(c => c.id === occ.colonie_id) : null;
+      return [fmtDate(t.semaine), ruche ? ruche.id + ' — ' + ruche.nom : t.ruche_id, col?.nom || '—', '<strong>' + (t.type_traitement||'—') + '</strong>', t.date_fin ? fmtDate(t.date_fin) : '—'];
+    });
+  exportRapportPDF('Rapport traitements', 'Traitements sanitaires', ['Date début','Ruche','Colonie','Traitement','Date fin'], lignes, 'Période : ' + fmtDate(debut) + ' → ' + fmtDate(fin));
+}
+
+function exportNourrissementsPDF() {
+  const debut = document.getElementById('f-rapport-nourr-debut')?.value;
+  const fin   = document.getElementById('f-rapport-nourr-fin')?.value;
+  if (!debut || !fin) { toast('Sélectionnez les dates', 'err'); return; }
+  const lignes = DB.nourrissements
+    .filter(n => n.semaine >= debut && n.semaine <= fin)
+    .sort((a,b) => a.semaine.localeCompare(b.semaine))
+    .map(n => {
+      const ruche = DB.ruches.find(r => r.id === n.ruche_id);
+      const occ   = (DB.occupations||[]).find(o => o.ruche_id === n.ruche_id && o.date_debut <= n.semaine && (!o.date_fin || o.date_fin >= n.semaine))
+                 || DB.occupation_courante.find(o => o.ruche_id === n.ruche_id);
+      const col   = occ ? DB.colonies.find(c => c.id === occ.colonie_id) : null;
+      return [fmtDate(n.semaine), ruche ? ruche.id + ' — ' + ruche.nom : n.ruche_id, col?.nom || '—', n.type_nourriture || '—', n.quantite ? n.quantite + ' kg' : '—'];
+    });
+  exportRapportPDF('Rapport nourrissements', 'Nourrissements', ['Date','Ruche','Colonie','Type','Quantité'], lignes, 'Période : ' + fmtDate(debut) + ' → ' + fmtDate(fin));
+}
+
+function exportActionsPDF() {
+  const debut = document.getElementById('f-rapport-action-debut')?.value;
+  const fin   = document.getElementById('f-rapport-action-fin')?.value;
+  if (!debut || !fin) { toast('Sélectionnez les dates', 'err'); return; }
+  const lignes = DB.actions
+    .filter(a => a.semaine >= debut && a.semaine <= fin)
+    .sort((a,b) => a.semaine.localeCompare(b.semaine))
+    .map(a => {
+      const ruche = DB.ruches.find(r => r.id === a.ruche_id);
+      const occ   = (DB.occupations||[]).find(o => o.ruche_id === a.ruche_id && o.date_debut <= a.semaine && (!o.date_fin || o.date_fin >= a.semaine))
+                 || DB.occupation_courante.find(o => o.ruche_id === a.ruche_id);
+      const col   = occ ? DB.colonies.find(c => c.id === occ.colonie_id) : null;
+      return [fmtDate(a.semaine), ruche ? ruche.id + ' — ' + ruche.nom : a.ruche_id, col?.nom || '—', a.action || '—', a.notes || ''];
+    });
+  exportRapportPDF('Rapport actions', 'Actions terrain', ['Date','Ruche','Colonie','Action','Notes'], lignes, 'Période : ' + fmtDate(debut) + ' → ' + fmtDate(fin));
+}
+
+function exportPeseesPDF() {
+  const debut = document.getElementById('f-rapport-pesee-debut')?.value;
+  const fin   = document.getElementById('f-rapport-pesee-fin')?.value;
+  if (!debut || !fin) { toast('Sélectionnez les dates', 'err'); return; }
+  const lignes = DB.pesees
+    .filter(p => p.semaine >= debut && p.semaine <= fin)
+    .sort((a,b) => a.semaine.localeCompare(b.semaine))
+    .map(p => {
+      const ruche = DB.ruches.find(r => r.id === p.ruche_id);
+      const occ   = (DB.occupations||[]).find(o => o.ruche_id === p.ruche_id && o.date_debut <= p.semaine && (!o.date_fin || o.date_fin >= p.semaine))
+                 || DB.occupation_courante.find(o => o.ruche_id === p.ruche_id);
+      const col   = occ ? DB.colonies.find(c => c.id === occ.colonie_id) : null;
+      const poids = p.pesee != null ? parseFloat(p.pesee).toFixed(1) : (p.demi_pesee != null ? (parseFloat(p.demi_pesee)*2).toFixed(1) : '—');
+      return [fmtDate(p.semaine), ruche ? ruche.id + ' — ' + ruche.nom : p.ruche_id, col?.nom || '—', poids + ' kg', p.nb_cadres || '—', p.nb_hausse || '—'];
+    });
+  exportRapportPDF('Rapport pesées', 'Suivi des pesées', ['Date','Ruche','Colonie','Poids','Cadres','Hausses'], lignes, 'Période : ' + fmtDate(debut) + ' → ' + fmtDate(fin));
+}
+
+function exportAchatsPDF() {
+  const debut = document.getElementById('f-rapport-achat-debut')?.value;
+  const fin   = document.getElementById('f-rapport-achat-fin')?.value;
+  if (!debut || !fin) { toast('Sélectionnez les dates', 'err'); return; }
+  const lignes = DB.achats
+    .filter(a => a.date >= debut && a.date <= fin)
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .map(a => [fmtDate(a.date), a.type_achat || '—', a.fournisseur || '—', a.description || '—', a.montant_ttc ? parseFloat(a.montant_ttc).toFixed(2) + ' €' : '—']);
+  const total = DB.achats.filter(a => a.date >= debut && a.date <= fin).reduce((s,a) => s + (parseFloat(a.montant_ttc)||0), 0);
+  lignes.push(['', '', '', '<strong>TOTAL</strong>', '<strong>' + total.toFixed(2) + ' €</strong>']);
+  exportRapportPDF('Rapport achats', 'Achats & dépenses', ['Date','Type','Fournisseur','Description','Montant TTC'], lignes, 'Période : ' + fmtDate(debut) + ' → ' + fmtDate(fin));
 }
 
 function toggleAllSoigner(check) {
@@ -3893,6 +4047,7 @@ function renderActionsScreen() {
     + '</div></div>'
     + '<button class="btn btn-primary btn-full" onclick="saveAction()">💾 Enregistrer</button>'
     + '</div>'
+    + buildRapportBloc('f-rapport-action-debut','f-rapport-action-fin','exportActionsPDF')
     + '<div class="form-card">'
     + '<div class="form-title" style="margin-bottom:10px">Dernières actions</div>'
     + dernieresHtml
@@ -4712,6 +4867,18 @@ function renderAchats() {
           </div>
         </div>`;
       }).join('')}
+    </div>
+    <div class="form-card">
+      <div class="form-title">📄 Rapport achats</div>
+      <div class="form-row">
+        <div class="form-group"><label class="field-label">Du</label>
+          <input type="date" id="f-rapport-achat-debut" value="${new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0,10)}">
+        </div>
+        <div class="form-group"><label class="field-label">Au</label>
+          <input type="date" id="f-rapport-achat-fin" value="${todayISO()}">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="exportAchatsPDF()">📄 Générer le rapport PDF</button>
     </div>
   `;
   // Remettre à zéro le fichier sélectionné
