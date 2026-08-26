@@ -1282,7 +1282,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v3.0.6</div>
+  <div class="splash-version">v3.1.3</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1444,7 +1444,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.0.6</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.1.3</div>
   </nav>
 
 </div><!-- /app -->
@@ -1657,7 +1657,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '3.0.6';
+const APP_VERSION = '3.1.3';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -2586,6 +2586,41 @@ function renderDashboard() {
         </div>`;
       }).join('')}
     </div>` : ''}
+
+    ${(() => {
+      // Ruches à surveiller : ratio poids/cadres orange ou rouge
+      const alertes = DB.ruches
+        .filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id))
+        .map(r => {
+          const p = DB.pesees.filter(x => x.ruche_id === r.id).sort((a,b) => new Date(b.semaine) - new Date(a.semaine))[0];
+          if (!p) return null;
+          const poids  = p.pesee != null ? parseFloat(p.pesee) : (p.demi_pesee != null ? parseFloat(p.demi_pesee)*2 : null);
+          if (!poids || !p.nb_cadres) return null;
+          const ratio  = poids / p.nb_cadres;
+          const couleur = ratio >= 3.0 ? null : ratio > 2.8 ? '#f59e0b' : '#e06060';
+          if (!couleur) return null;
+          return { ruche: r, poids, semaine: p.semaine, ratio, couleur };
+        })
+        .filter(Boolean)
+        .sort((a,b) => a.ratio - b.ratio); // les plus critiques en premier
+
+      return alertes.length ? `
+      <div class="dash-chart-card">
+        <div class="dash-chart-title">⚠️ À surveiller</div>
+        ${alertes.map(a => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border-soft);cursor:pointer" onclick="navigate('ruche-detail','${a.ruche.id}')">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:10px;height:10px;border-radius:50%;background:${a.couleur};flex-shrink:0"></div>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:var(--text)">${a.ruche.nom}</div>
+                <div style="font-size:10px;color:var(--text-muted)">${fmtDate(a.semaine)} · ${a.poids.toFixed(1)} kg · ${a.ratio.toFixed(2)} kg/cadre</div>
+              </div>
+            </div>
+            <span style="font-size:10px;font-weight:700;color:${a.couleur}">${a.couleur === '#e06060' ? '🔴' : '🟠'}</span>
+          </div>
+        `).join('')}
+      </div>` : '';
+    })()}
 
     <div class="dash-chart-card">
       <div class="dash-chart-title">Activité récente</div>
@@ -4015,17 +4050,34 @@ async function saveRetraitHausse(hausseId) {
 
 function renderActionsScreen() {
   const el = document.getElementById('content-actions');
-  const ruchesActives = DB.ruches.filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id)).sort((a,b) => a.nom.localeCompare(b.nom));
+  if (typeof window._actionShowInactives === 'undefined') window._actionShowInactives = false;
+  // Mode inactives = ruches sans colonie en place (vides)
+  const ruchesActives = window._actionShowInactives
+    ? DB.ruches.filter(r => r.actif !== false && !DB.occupation_courante.find(o => o.ruche_id === r.id)).sort((a,b) => (a.nom||a.id).localeCompare(b.nom||b.id))
+    : DB.ruches.filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id)).sort((a,b) => a.nom.localeCompare(b.nom));
 
-  // Dernières actions HTML (sans checkboxes)
-  const dernieresHtml = DB.actions.slice(0,8).map(a => {
+  // Dernières actions : regroupées par action + date si plusieurs ruches
+  const actionsRecentes = DB.actions.slice(0, 30);
+  const groupes = {};
+  actionsRecentes.forEach(a => {
+    const key = a.action + '|' + a.semaine;
+    if (!groupes[key]) groupes[key] = { action: a.action, semaine: a.semaine, ruches: [], ids: [] };
+    groupes[key].ruches.push(a.ruche_id);
+    groupes[key].ids.push(a.id);
+  });
+  const dernieresHtml = Object.values(groupes).slice(0, 10).map(g => {
+    const nomsRuches = g.ruches.map(rid => { const r = DB.ruches.find(x => x.id === rid); return r ? r.nom : rid; });
+    const ruchesLabel = nomsRuches.length > 1 ? nomsRuches.join(', ') : (nomsRuches[0] || g.ruches[0]);
+    const deleteBtn = g.ids.length === 1
+      ? '<button onclick="deleteAction(\'' + g.ids[0] + '\',\'actions\',null)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:4px 2px;flex-shrink:0" title="Supprimer">🗑️</button>'
+      : '';
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft)">'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:13px;color:var(--text)">' + a.action + '</div>'
-      + '<div style="font-size:11px;color:var(--text-dim)">' + a.ruche_id + ' · ' + fmtDate(a.semaine) + '</div>'
-      + '</div>'
-      + '<button onclick="deleteAction(\'' + a.id + '\',\'actions\',null)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:4px 2px;flex-shrink:0" title="Supprimer">🗑️</button>'
-      + '</div>';
+      + '<div style="font-size:13px;font-weight:600;color:var(--text)">' + g.action + '</div>'
+      + '<div style="font-size:11px;color:var(--text-dim);margin-top:1px">'
+      + fmtDate(g.semaine) + ' · ' + ruchesLabel
+      + (g.ruches.length > 1 ? ' <span style="font-size:10px;color:var(--gold);font-weight:600">×' + g.ruches.length + '</span>' : '')
+      + '</div></div>' + deleteBtn + '</div>';
   }).join('');
 
   el.innerHTML = '<div class="form-card">'
@@ -4042,6 +4094,7 @@ function renderActionsScreen() {
     + '<span style="display:flex;gap:8px">'
     + '<button onclick="toggleAllRuchesAction(true)" style="background:none;border:none;font-size:11px;color:var(--gold);cursor:pointer;padding:0">Toutes</button>'
     + '<button onclick="toggleAllRuchesAction(false)" style="background:none;border:none;font-size:11px;color:var(--text-muted);cursor:pointer;padding:0">Aucune</button>'
+    + '<button onclick="toggleRuchesInactives()" style="background:none;border:none;font-size:11px;color:' + (window._actionShowInactives ? 'var(--gold)' : 'var(--text-muted)') + ';cursor:pointer;padding:0">' + (window._actionShowInactives ? '← Actives' : 'Inactives') + '</button>'
     + '</span></label>'
     + '<div id="actions-ruches-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:4px"></div>'
     + '</div></div>'
@@ -4100,6 +4153,11 @@ function renderActionsScreen() {
 
     listEl.appendChild(card);
   });
+}
+
+function toggleRuchesInactives() {
+  window._actionShowInactives = !window._actionShowInactives;
+  renderActionsScreen();
 }
 
 function toggleAllRuchesAction(check) {
