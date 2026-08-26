@@ -1282,7 +1282,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v3.1.3</div>
+  <div class="splash-version">v3.1.5</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1299,6 +1299,7 @@ select option { background: var(--bg2); color: var(--cream); }
     <div class="splash-stat-tile"><div class="splash-stat-val green" id="ss-encours">-</div><div class="splash-stat-lbl">En cours</div></div>
   </div>
   <div id="ss-arecolter" style="display:none;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;padding:0 16px"></div>
+  <div id="ss-surveiller" style="display:none;margin-top:10px;width:100%;max-width:360px;padding:0 8px;box-sizing:border-box"></div>
 </div>
 
 <div id="app">
@@ -1444,7 +1445,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.1.3</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.1.5</div>
   </nav>
 
 </div><!-- /app -->
@@ -1657,7 +1658,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '3.1.3';
+const APP_VERSION = '3.1.5';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -1973,6 +1974,40 @@ function renderSplashStats() {
     }
   }
 
+  // Ruches à surveiller (ratio poids/cadres orange ou rouge)
+  const surveilEl = document.getElementById('ss-surveiller');
+  if (surveilEl) {
+    const alertes = DB.ruches
+      .filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id))
+      .map(r => {
+        const p = DB.pesees.filter(x => x.ruche_id === r.id).sort((a,b) => new Date(b.semaine) - new Date(a.semaine))[0];
+        if (!p) return null;
+        const poids = p.pesee != null ? parseFloat(p.pesee) : (p.demi_pesee != null ? parseFloat(p.demi_pesee)*2 : null);
+        if (!poids || !p.nb_cadres) return null;
+        const ratio = poids / p.nb_cadres;
+        const couleur = ratio >= 3.0 ? null : ratio > 2.8 ? '#e8924a' : '#e06060';
+        if (!couleur) return null;
+        return { nom: r.nom, poids, ratio, couleur };
+      })
+      .filter(Boolean)
+      .sort((a,b) => a.ratio - b.ratio);
+
+    if (alertes.length) {
+      surveilEl.innerHTML = '<div style="font-size:10px;color:rgba(80,60,10,.6);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;text-align:center">⚠️ À surveiller</div>'
+        + '<div style="display:flex;flex-direction:column;gap:4px">'
+        + alertes.map(a =>
+            '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-radius:6px;background:rgba(0,0,0,.08);border-left:3px solid ' + a.couleur + ';gap:8px">'
+            + '<span style="font-size:12px;font-weight:600;color:#2a1a00;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + a.nom + '</span>'
+            + '<span style="font-size:11px;color:' + a.couleur + ';font-weight:700;flex-shrink:0">' + a.poids.toFixed(1) + ' kg</span>'
+            + '</div>'
+          ).join('')
+        + '</div>';
+      surveilEl.style.display = 'block';
+    } else {
+      surveilEl.style.display = 'none';
+    }
+
+  }
   el.style.display = 'grid';
 }
 
