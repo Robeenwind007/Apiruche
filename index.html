@@ -1282,7 +1282,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v3.1.5</div>
+  <div class="splash-version">v3.3.2</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1445,7 +1445,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.1.5</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.3.2</div>
   </nav>
 
 </div><!-- /app -->
@@ -1658,7 +1658,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '3.1.5';
+const APP_VERSION = '3.3.2';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -2169,6 +2169,7 @@ const MENU_SECTIONS = [
       { id: 'nourrir', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 3v5a5 5 0 005 5 5 5 0 005-5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10 13v4M7 17h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>`,  label: 'Nourrir',  screen: 'nourrir' },
       { id: 'soigner', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M10 7v6M7 10h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>`,  label: 'Soigner',  screen: 'soigner' },
       { id: 'actions', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 6h12M4 10h8M4 14h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>`,  label: 'Actions',  screen: 'actions' },
+      { id: 'au-rucher', icon: `<span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 17V8l6-5 6 5v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="7" y="11" width="6" height="6" rx="0.5" stroke="currentColor" stroke-width="1.2"/></svg></span>`, label: 'Au rucher', action: 'exportAuRucherPDF' },
     ]
   },
   {
@@ -2189,7 +2190,7 @@ function renderMenu() {
       <div class="menu-section-title">${section.title}</div>
       <div class="menu-grid">
         ${section.items.map(item => `
-          <button class="menu-tile" onclick="navigate('${item.screen}')">
+          <button class="menu-tile" onclick="${item.action ? item.action + '()' : 'navigate(\'' + item.screen + '\')'  }">
             <div class="menu-tile-icon">${item.icon}</div>
             <div class="menu-tile-label">${item.label}</div>
           </button>
@@ -3183,11 +3184,11 @@ function renderSoigner() {
     + '<div class="form-title">💊 Traitement</div>'
     + '<div class="form-row">'
     + '<div class="form-group"><label class="field-label">Traitement</label>'
-    + '<select id="f-soigner-type">' + getListes().type_traitement.map(v => '<option>' + v + '</option>').join('') + '</select></div>'
+    + '<select id="f-soigner-type" onchange="toggleSoignerDateFin(this.value)">' + getListes().type_traitement.map(v => '<option>' + v + '</option>').join('') + '</select></div>'
     + '<div class="form-group"><label class="field-label">Date début</label>'
     + '<input type="date" id="f-soigner-date" value="' + todayISO() + '"></div>'
     + '</div>'
-    + '<div class="form-row">'
+    + '<div class="form-row" id="soigner-fin-row">'
     + '<div class="form-group"><label class="field-label">Date fin</label>'
     + '<input type="date" id="f-soigner-fin"></div>'
     + '</div>'
@@ -3202,7 +3203,14 @@ function renderSoigner() {
     + '</div></div>'
     + '<button class="btn btn-primary btn-full" onclick="saveSoigner()">💾 Enregistrer</button>'
     + '</div>'
-    + buildRapportBloc('f-rapport-trait-debut','f-rapport-trait-fin','exportTraitementsPDF');
+    + buildRapportBloc('f-rapport-trait-debut','f-rapport-trait-fin','exportTraitementsPDF')
+    + '<div id="trait-historique-wrap"></div>';
+  // Appliquer dès le rendu
+  setTimeout(function() {
+    var sel = document.getElementById('f-soigner-type');
+    if (sel) toggleSoignerDateFin(sel.value);
+    renderTraitementsHistorique();
+  }, 0);
 
   const listEl = document.getElementById('soigner-ruches-list');
   ruchesActives.forEach(r => {
@@ -3234,6 +3242,64 @@ function renderSoigner() {
     });
     listEl.appendChild(card);
   });
+}
+
+function exportAuRucherPDF() {
+  const ruches = DB.ruches
+    .filter(r => r.actif !== false && DB.occupation_courante.find(o => o.ruche_id === r.id))
+    .sort((a,b) => a.nom.localeCompare(b.nom));
+  if (!ruches.length) { toast('Aucune ruche active', 'err'); return; }
+
+  const rows = ruches.map(r =>
+    '<tr>'
+    + '<td>' + r.nom + '</td>'
+    + '<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>'
+    + '</tr>'
+  ).join('');
+
+  const emptyRows = Array(5).fill(
+    '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>'
+  ).join('');
+
+  const bloc = () =>
+    '<div class="bloc">'
+    + '<div class="hdr"><span class="hdr-titre">Principauté de Cordemais</span></div>'
+    + '<div class="hdr-sub">Feuille de rucher</div>'
+    + '<div class="date-box">Date : <span style="display:inline-block;width:80px;border-bottom:1px solid #c8a84b">&nbsp;</span></div>'
+    + '<table><thead><tr>'
+    + '<th>Ruche</th><th>Pesée 1</th><th>Pesée 2</th><th>Cadres</th><th>Observations</th>'
+    + '</tr></thead><tbody>' + rows + emptyRows + '</tbody></table>'
+    + '<div class="obs-box"><div class="obs-label">Observations générales</div></div>'
+    + '</div>';
+
+  const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Au rucher</title>'
+    + '<style>'
+    + '@page { size: A4 landscape; margin: 0; }'
+    + 'body { margin: 0; padding: 0; background: #fff; font-family: Arial, sans-serif; font-size: 10px; }'
+    + '.page { display: flex; flex-direction: row; width: 297mm; height: 210mm; justify-content: space-around; align-items: stretch; padding: 6mm; box-sizing: border-box; gap: 6mm; }'
+    + '.bloc { flex: 1; border: 0.5px solid #c8a84b; border-radius: 2mm; padding: 6mm; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }'
+    + '.hdr { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }'
+    + '.hdr-titre { font-size: 12px; font-weight: 700; color: #1a1000; }'
+    + '.hdr-sub { font-size: 8px; color: #6b5020; margin-bottom: 4px; }'
+    + '.date-box { font-size: 9px; color: #1a1000; margin-bottom: 5px; }'
+    + 'table { width: 100%; border-collapse: collapse; }'
+    + 'th, td { border: 1px solid #c8a84b; padding: 4px 5px; text-align: left; }'
+    + 'thead tr { background: #c8a84b; color: #1a1000; font-weight: 700; font-size: 9px; }'
+    + 'tbody td { font-size: 9px; }'
+    + 'tbody tr:nth-child(even) { background: #fdfaf0; }'
+    + 'td:first-child { font-weight: 600; white-space: nowrap; }'
+    + 'th:nth-child(2), td:nth-child(2), th:nth-child(3), td:nth-child(3) { width: 38px; }'
+    + 'th:nth-child(4), td:nth-child(4) { width: 26px; text-align: center; }'
+    + '.obs-box { margin-top: auto; border: 1px solid #c8a84b; border-radius: 1mm; flex: 1; min-height: 12mm; margin-top: 4px; padding: 3px 5px; }'
+    + '.obs-label { font-size: 8px; color: #6b5020; margin-bottom: 2px; }'
+    + '</style></head><body>'
+    + '<div class="page">' + bloc() + bloc() + '</div>'
+    + '</body></html>';
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function() { w.print(); }, 500);
 }
 
 function exportRapportPDF(titre, sousTitre, colonnes, lignes, periode) {
@@ -3376,6 +3442,146 @@ function exportAchatsPDF() {
   exportRapportPDF('Rapport achats', 'Achats & dépenses', ['Date','Type','Fournisseur','Description','Montant TTC'], lignes, 'Période : ' + fmtDate(debut) + ' → ' + fmtDate(fin));
 }
 
+function renderTraitementsHistorique() {
+  const el = document.getElementById('trait-historique-wrap');
+  if (!el) return;
+  const list = DB.traitements.slice(0,100).sort((a,b) => b.semaine.localeCompare(a.semaine));
+  if (!list.length) { el.innerHTML = ''; return; }
+  let html = '<div class="form-card"><div class="form-title">💊 Derniers traitements (' + list.length + ')</div>';
+  list.forEach(t => {
+    const ruche = DB.ruches.find(r => r.id === t.ruche_id);
+    const occ   = DB.occupation_courante.find(o => o.ruche_id === t.ruche_id);
+    const col   = occ ? DB.colonies.find(c => c.id === occ.colonie_id) : null;
+    const tid   = JSON.stringify(t.id);
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border-soft)">'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:12px;font-weight:600;color:var(--text)">' + (t.type_traitement||'\u2014') + '</div>'
+      + '<div style="font-size:11px;color:var(--text-dim)">'
+      + fmtDate(t.semaine)
+      + ' \u00b7 ' + (ruche ? ruche.nom : t.ruche_id)
+      + (col ? ' \u00b7 ' + col.nom : '')
+      + (t.date_fin ? ' \u2192 ' + fmtDate(t.date_fin) : '')
+      + '</div></div>'
+      + '<button data-tid="' + t.id + '" onclick="editTraitement(this.dataset.tid)" style="padding:5px 9px;border-radius:7px;border:1px solid var(--border-soft);background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer">&#9999;&#65039;</button>'
+      + '<button data-tid="' + t.id + '" onclick="deleteTraitement(this.dataset.tid)" style="padding:5px 9px;border-radius:7px;border:1px solid #e06060;background:transparent;color:#e06060;font-size:13px;cursor:pointer">&#128465;</button>'
+      + '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function editTraitement(id) {
+  const t = DB.traitements.find(x => x.id === id);
+  if (!t) return;
+  const ruche = DB.ruches.find(r => r.id === t.ruche_id);
+  const noFin = ['Varromed','Varroxal Sub','Varroxal Deg'];
+  let dlg = document.getElementById('trait-edit-dialog');
+  if (dlg) dlg.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'trait-edit-dialog';
+  Object.assign(overlay.style, {position:'fixed',inset:'0',background:'rgba(0,0,0,.7)',zIndex:'10002',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'});
+  const box = document.createElement('div');
+  Object.assign(box.style, {background:'#1a1a12',border:'2px solid #c8a84b',borderRadius:'14px',padding:'20px 18px',width:'100%',maxWidth:'380px'});
+
+  // Titre
+  const titre = document.createElement('div');
+  titre.style.cssText = 'font-family:DM Serif Display,serif;font-size:16px;color:#c8a84b;margin-bottom:4px';
+  titre.textContent = 'Modifier le traitement';
+  box.appendChild(titre);
+  const sub = document.createElement('div');
+  sub.style.cssText = 'font-size:12px;color:#9a9070;margin-bottom:14px';
+  sub.textContent = ruche ? ruche.nom : t.ruche_id;
+  box.appendChild(sub);
+
+  // Select type
+  const selType = document.createElement('select');
+  selType.style.cssText = 'width:100%;padding:8px;border-radius:8px;border:1px solid #3a3a2a;background:#0a0a06;color:#e8e0c8;font-size:13px;margin-bottom:10px;box-sizing:border-box';
+  getListes().type_traitement.forEach(function(v) {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    if (v === t.type_traitement) opt.selected = true;
+    selType.appendChild(opt);
+  });
+
+  // Date debut
+  const inpDate = document.createElement('input');
+  inpDate.type = 'date'; inpDate.value = t.semaine || '';
+  inpDate.style.cssText = 'width:100%;padding:8px;border-radius:8px;border:1px solid #3a3a2a;background:#0a0a06;color:#e8e0c8;font-size:13px;margin-bottom:10px;box-sizing:border-box';
+
+  // Date fin
+  const wrapFin = document.createElement('div');
+  wrapFin.style.display = noFin.includes(t.type_traitement) ? 'none' : 'block';
+  const inpFin = document.createElement('input');
+  inpFin.type = 'date'; inpFin.value = t.date_fin || '';
+  inpFin.style.cssText = 'width:100%;padding:8px;border-radius:8px;border:1px solid #3a3a2a;background:#0a0a06;color:#e8e0c8;font-size:13px;box-sizing:border-box';
+  const lblFin = document.createElement('div');
+  lblFin.style.cssText = 'font-size:10px;color:#9a9070;margin-bottom:4px';
+  lblFin.textContent = 'Date fin';
+  wrapFin.appendChild(lblFin); wrapFin.appendChild(inpFin);
+  selType.onchange = function() {
+    wrapFin.style.display = noFin.includes(this.value) ? 'none' : 'block';
+    if (noFin.includes(this.value)) inpFin.value = '';
+  };
+
+  box.appendChild(selType); box.appendChild(inpDate); box.appendChild(wrapFin);
+
+  // Boutons
+  const btns = document.createElement('div');
+  btns.style.cssText = 'display:flex;gap:8px;margin-top:14px';
+  const btnCancel = document.createElement('button');
+  btnCancel.textContent = 'Annuler';
+  btnCancel.style.cssText = 'flex:1;padding:9px;border-radius:8px;border:1px solid #3a3a2a;background:transparent;color:#9a9070;font-size:13px;cursor:pointer';
+  btnCancel.onclick = function() { overlay.remove(); };
+  const btnSave = document.createElement('button');
+  btnSave.textContent = 'Enregistrer';
+  btnSave.style.cssText = 'flex:2;padding:9px;border-radius:8px;border:none;background:#c8a84b;color:#0a0a06;font-size:13px;font-weight:700;cursor:pointer';
+  btnSave.onclick = async function() {
+    const cfg = getConfig();
+    if (!cfg.url || !cfg.key) { toast('Configurez Supabase', 'err'); return; }
+    const type_traitement = selType.value;
+    const semaine = inpDate.value;
+    const date_fin = inpFin.value || null;
+    if (!semaine) { toast('Date requise', 'err'); return; }
+    try {
+      const r = await fetch(cfg.url + '/rest/v1/traitements?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ semaine, type_traitement, date_fin })
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const idx = DB.traitements.findIndex(x => x.id === id);
+      if (idx !== -1) Object.assign(DB.traitements[idx], { semaine, type_traitement, date_fin });
+      saveCache(); overlay.remove();
+      addLog('UPDATE', 'traitements', type_traitement + ' · ' + semaine);
+      toast('Traitement modifié ✓', 'ok');
+      renderTraitementsHistorique();
+    } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+  };
+  btns.appendChild(btnCancel); btns.appendChild(btnSave);
+  box.appendChild(btns);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+async function deleteTraitement(id) {
+  showConfirm('Supprimer ce traitement ?', async () => {
+    const cfg = getConfig();
+    if (!cfg.url || !cfg.key) { toast('Configurez Supabase', 'err'); return; }
+    try {
+      const r = await fetch(cfg.url + '/rest/v1/traitements?id=eq.' + id, {
+        method: 'DELETE',
+        headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key, Prefer: 'return=minimal' }
+      });
+      if (!r.ok) throw new Error(await r.text());
+      DB.traitements = DB.traitements.filter(x => x.id !== id);
+      saveCache();
+      addLog('DELETE', 'traitements', 'id:' + id);
+      toast('Traitement supprim\u00e9 \u2713', 'ok');
+      renderTraitementsHistorique();
+    } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+  }, 'Supprimer');
+}
+
 function toggleAllSoigner(check) {
   document.querySelectorAll('#soigner-ruches-list [data-ruche]').forEach(card => {
     const ico = card.querySelector('.soigner-cb-ico');
@@ -3390,22 +3596,54 @@ function toggleAllSoigner(check) {
   });
 }
 
+function toggleSoignerDateFin(val) {
+  var noFin = ['Varromed','Varroxal Sub','Varroxal Deg'];
+  var row = document.getElementById('soigner-fin-row');
+  if (!row) return;
+  if (noFin.includes(val)) {
+    row.style.display = 'none';
+    var inp = document.getElementById('f-soigner-fin');
+    if (inp) inp.value = '';
+  } else {
+    row.style.display = '';
+  }
+}
+
 async function saveSoigner() {
   const cfg = getConfig();
   if (!cfg.url || !cfg.key) { toast('Configurez Supabase d\'abord', 'err'); showSettings(); return; }
-  const semaine        = document.getElementById('f-soigner-date')?.value;
+  const semaine         = document.getElementById('f-soigner-date')?.value;
   const type_traitement = document.getElementById('f-soigner-type')?.value;
-  const date_fin       = document.getElementById('f-soigner-fin')?.value || null;
-  const selected = [...document.querySelectorAll('#soigner-ruches-list [data-ruche][data-selected="1"]')];
-  if (!semaine)         { toast('Date requise', 'err'); return; }
-  if (!selected.length) { toast('Sélectionnez au moins une ruche', 'err'); return; }
+  const date_fin        = document.getElementById('f-soigner-fin')?.value || null;
+  const editId          = document.getElementById('f-soigner-type')?.dataset?.editId;
+  if (!semaine) { toast('Date requise', 'err'); return; }
 
+  if (editId) {
+    try {
+      const r = await fetch(cfg.url + '/rest/v1/traitements?id=eq.' + editId, {
+        method: 'PATCH',
+        headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ semaine, type_traitement, date_fin })
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const idx = DB.traitements.findIndex(x => x.id === editId);
+      if (idx !== -1) Object.assign(DB.traitements[idx], { semaine, type_traitement, date_fin });
+      saveCache();
+      delete document.getElementById('f-soigner-type').dataset.editId;
+      addLog('UPDATE', 'traitements', type_traitement + ' · ' + semaine);
+      toast('Traitement modifié ✓', 'ok');
+      renderSoigner();
+    } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+    return;
+  }
+
+  const selected = [...document.querySelectorAll('#soigner-ruches-list [data-ruche][data-selected="1"]')];
+  if (!selected.length) { toast('Sélectionnez au moins une ruche', 'err'); return; }
   const records = selected.map(card => {
     const rucheId = card.dataset.ruche;
     const occ = DB.occupation_courante.find(o => o.ruche_id === rucheId);
     return { id: genId(), ruche_id: rucheId, colonie_id: occ?.colonie_id || null, semaine, type_traitement, date_fin };
   });
-
   try {
     const r = await fetch(cfg.url + '/rest/v1/traitements', {
       method: 'POST',
@@ -3421,12 +3659,6 @@ async function saveSoigner() {
     renderSoigner();
   } catch(e) { toast('Erreur : ' + e.message, 'err'); }
 }
-
-
-// ============================================================
-// PRODUCTION — HAUSSES À MIEL
-// ============================================================
-
 function renderProduction() {
   const el = document.getElementById('content-production');
   const hausses = DB.hausses || [];
@@ -6652,6 +6884,9 @@ function renderRucheDetail(rucheId) {
         <button class="action-rapide-btn" onclick="captureGPS('${ruche.id}')">
           <span class="icon">📍</span><span class="label">${ruche.latitude ? 'GPS ✓' : 'GPS'}</span>
         </button>
+        <button class="action-rapide-btn" onclick="showJournalRucheDialog('${ruche.id}')">
+          <span class="icon">📋</span><span class="label">Journal</span>
+        </button>
       </div>
     </div>
 
@@ -6964,6 +7199,185 @@ function renderRucheDetail(rucheId) {
 
     <div style="height:16px"></div>
   `;
+}
+
+function showJournalRucheDialog(rucheId) {
+  var ruche = DB.ruches.find(function(r){ return r.id === rucheId; });
+  if (!ruche) return;
+  var annee = new Date().getFullYear();
+  var dlg = document.getElementById('journal-dialog');
+  if (dlg) dlg.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'journal-dialog';
+  Object.assign(overlay.style, {position:'fixed',inset:'0',background:'rgba(0,0,0,.7)',zIndex:'10002',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'});
+  var box = document.createElement('div');
+  Object.assign(box.style, {background:'#1a1a12',border:'2px solid #c8a84b',borderRadius:'14px',padding:'22px 20px',width:'100%',maxWidth:'380px'});
+  box.innerHTML =
+    '<div style="font-family:DM Serif Display,serif;font-size:18px;color:#c8a84b;margin-bottom:4px">\uD83D\uDCCB Journal de ruche</div>'
+    + '<div style="font-size:13px;color:#9a9070;margin-bottom:16px">' + ruche.nom + '</div>'
+    + '<div style="display:flex;gap:10px;margin-bottom:16px">'
+    + '<div style="flex:1"><label style="font-size:10px;color:#9a9070;display:block;margin-bottom:4px">Du</label>'
+    + '<input type="date" id="jrd-debut" value="' + annee + '-01-01" style="width:100%;padding:8px;border-radius:8px;border:1px solid #3a3a2a;background:#0a0a06;color:#e8e0c8;font-size:13px;box-sizing:border-box"></div>'
+    + '<div style="flex:1"><label style="font-size:10px;color:#9a9070;display:block;margin-bottom:4px">Au</label>'
+    + '<input type="date" id="jrd-fin" value="' + todayISO() + '" style="width:100%;padding:8px;border-radius:8px;border:1px solid #3a3a2a;background:#0a0a06;color:#e8e0c8;font-size:13px;box-sizing:border-box"></div>'
+    + '</div><div style="display:flex;gap:8px">'
+    + '<button onclick="document.getElementById(\'journal-dialog\').remove()" style="flex:1;padding:10px;border-radius:8px;border:1px solid #3a3a2a;background:transparent;color:#9a9070;font-size:13px;cursor:pointer">Annuler</button>'
+    + '<button onclick="exportJournalRuchePDF(\'' + rucheId + '\', document.getElementById(\'jrd-debut\').value, document.getElementById(\'jrd-fin\').value); document.getElementById(\'journal-dialog\').remove();" style="flex:2;padding:10px;border-radius:8px;border:none;background:#c8a84b;color:#0a0a06;font-size:13px;font-weight:700;cursor:pointer">\uD83D\uDCC4 G\u00e9n\u00e9rer le PDF</button>'
+    + '</div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+function exportJournalRuchePDF(rucheId, debut, fin) {
+  var ruche = DB.ruches.find(function(r){ return r.id === rucheId; });
+  if (!ruche) return;
+  var api = (DB.fiche_apiculteur && DB.fiche_apiculteur[0]) || {};
+
+  function colonieADate(date) {
+    var occ = (DB.occupations||[]).find(function(o){ return o.ruche_id===rucheId && o.date_debut<=date && (!o.date_fin||o.date_fin>=date); })
+      || DB.occupation_courante.find(function(o){ return o.ruche_id===rucheId; });
+    return occ ? DB.colonies.find(function(c){ return c.id===occ.colonie_id; }) : null;
+  }
+
+  var events = [];
+
+  // Colonies
+  (DB.occupations||[]).filter(function(o){ return o.ruche_id===rucheId && ((o.date_debut>=debut&&o.date_debut<=fin)||(o.date_fin&&o.date_fin>=debut&&o.date_fin<=fin)||(o.date_debut<=debut&&(!o.date_fin||o.date_fin>=fin))); }).forEach(function(o) {
+    var col = DB.colonies.find(function(c){ return c.id===o.colonie_id; });
+    if (o.date_debut>=debut&&o.date_debut<=fin) events.push({date:o.date_debut,cat:'colonie',icon:'\uD83D\uDC51',titre:'Installation colonie',detail:col?col.nom:o.colonie_id,couleur:'#c8a84b'});
+    if (o.date_fin&&o.date_fin>=debut&&o.date_fin<=fin) events.push({date:o.date_fin,cat:'colonie',icon:'\uD83D\uDC51',titre:'D\u00e9part colonie',detail:col?col.nom:o.colonie_id,couleur:'#9a9070'});
+  });
+
+  // Pesees
+  DB.pesees.filter(function(p){ return p.ruche_id===rucheId&&p.semaine>=debut&&p.semaine<=fin; }).forEach(function(p) {
+    var poids = p.pesee!=null?parseFloat(p.pesee):(p.demi_pesee!=null?parseFloat(p.demi_pesee)*2:null);
+    var ratio = (poids && p.nb_cadres) ? poids / p.nb_cadres : null;
+    var macCol = ratio===null?'#aaa':ratio>=3.0?'#6ec06e':ratio>2.8?'#e8924a':'#e06060';
+    events.push({date:p.semaine,cat:'pesee',icon:'⚖️',titre:'Pesée',
+      poids:poids,cadres:p.nb_cadres,ratio:ratio,macCol:macCol,
+      detail:[poids?poids.toFixed(1)+' kg':null,p.nb_cadres?p.nb_cadres+' cadres':null,ratio?ratio.toFixed(2)+' kg/c':null].filter(Boolean).join(' · '),
+      couleur:'#4a9ade'});
+  });
+
+  // Nourrissements
+  DB.nourrissements.filter(function(n){ return n.ruche_id===rucheId&&n.semaine>=debut&&n.semaine<=fin; }).forEach(function(n) {
+    events.push({date:n.semaine,cat:'nourrir',icon:'\uD83C\uDF7D\uFE0F',titre:'Nourrissement',detail:[n.type_nourriture,n.quantite?n.quantite+' kg':null].filter(Boolean).join(' \u00b7 '),couleur:'#e8924a'});
+  });
+
+  // Traitements
+  DB.traitements.filter(function(t){ return t.ruche_id===rucheId&&t.semaine>=debut&&t.semaine<=fin; }).forEach(function(t) {
+    events.push({date:t.semaine,cat:'soigner',icon:'\uD83D\uDC8A',titre:'Traitement',detail:[t.type_traitement,t.date_fin?'fin le '+fmtDate(t.date_fin):null].filter(Boolean).join(' \u00b7 '),couleur:'#b06ec8'});
+  });
+
+  // Actions
+  DB.actions.filter(function(a){ return a.ruche_id===rucheId&&a.semaine>=debut&&a.semaine<=fin; }).forEach(function(a) {
+    events.push({date:a.semaine,cat:'action',icon:'\uD83E\uFAB1',titre:a.action||'Action',detail:a.notes||'',couleur:'#6ec06e'});
+  });
+
+  // Hausses
+  (DB.hausses||[]).filter(function(h){ return h.ruche_id===rucheId; }).forEach(function(h) {
+    if (h.date_pose>=debut&&h.date_pose<=fin) events.push({date:h.date_pose,cat:'hausse',icon:'\uD83C\uDF6F',titre:'Pose hausse '+h.hausse_ref,detail:h.poids_ref?'R\u00e9f. '+parseFloat(h.poids_ref).toFixed(1)+' kg':'',couleur:'#c8a84b'});
+    if (h.date_retrait&&h.date_retrait>=debut&&h.date_retrait<=fin) {
+      var pm = h.poids_miel!=null?parseFloat(h.poids_miel):(h.poids_retrait!=null?parseFloat(h.poids_retrait):null);
+      var pmLabel = pm!=null?(pm.toFixed(1)+' kg r\u00e9colt\u00e9s'):'<i>Retrait sans miel</i>';
+      events.push({date:h.date_retrait,cat:'hausse',icon:'\uD83C\uDF6F',titre:'Retrait hausse '+h.hausse_ref,
+        detail:[pmLabel,h.variete||null,h.num_lot?'Lot '+h.num_lot:null].filter(Boolean).join(' \u00b7 '),
+        couleur:'#6ec06e'});
+    }
+  });
+
+  // Varroa
+  (DB.comptages_varroa||[]).filter(function(v){ return v.ruche_id===rucheId&&v.date>=debut&&v.date<=fin; }).forEach(function(v) {
+    events.push({date:v.date,cat:'varroa',icon:'\uD83D\uDD2C',titre:'Comptage Varroa',detail:v.nb_varroa!=null?v.nb_varroa+' varroa':'',couleur:'#e06060'});
+  });
+
+  events.sort(function(a,b){ return a.date.localeCompare(b.date); });
+  if (!events.length) { toast('Aucun \u00e9v\u00e9nement sur cette p\u00e9riode', 'err'); return; }
+
+  var colCourante = colonieADate(fin) || colonieADate(debut);
+  var apiculteur = [api.prenom, api.nom].filter(Boolean).join(' ');
+
+  var catLabels = {colonie:'Colonie', pesee:'Pesees', nourrir:'Nourrissements', soigner:'Traitements', action:'Actions', hausse:'Hausses', varroa:'Varroa'};
+  var catIcons = {colonie:'👑', pesee:'⚖️', nourrir:'🍽', soigner:'💊', action:'🪱', hausse:'🍯', varroa:'🔬'};
+
+  function makeCard(e) {
+    if (e.cat === 'pesee') {
+      var mac = '<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:' + e.macCol + ';vertical-align:middle;margin-left:5px;flex-shrink:0"></span>';
+      return '<div class="event" style="--c:#4a9ade"><div class="ec" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap">'
+        + '<span class="ed" style="flex-shrink:0">' + fmtDate(e.date) + '</span>'
+        + '<span style="flex-shrink:0">' + e.icon + '</span>'
+        + (e.poids?'<b style="font-size:12px;color:#2a1a00">' + e.poids.toFixed(1) + ' kg</b>':'')
+        + (e.cadres?'<span class="edl" style="margin:0">' + e.cadres + ' cadres</span>':'')
+        + (e.ratio?'<span class="edl" style="margin:0">' + e.ratio.toFixed(2) + ' kg/c</span>':'')
+        + mac
+        + '</div></div>';
+    }
+    return '<div class="event" style="--c:' + e.couleur + '"><div class="ec" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap">'
+      + '<span class="ed" style="flex-shrink:0">' + fmtDate(e.date) + '</span>'
+      + '<span style="flex-shrink:0">' + e.icon + '</span>'
+      + '<b style="font-size:12px;color:#2a1a00;flex-shrink:0">' + e.titre + '</b>'
+      + (e.detail?'<span class="edl" style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + e.detail + '</span>':'')
+      + '</div></div>';
+  }
+
+  var rowsDate = events.map(makeCard).join('');
+  var cats = ['colonie','pesee','nourrir','soigner','action','hausse','varroa'];
+  var rowsType = cats.map(function(c) {
+    var ev = events.filter(function(e){ return e.cat===c; });
+    if (!ev.length) return '';
+    return '<h2>' + (catIcons[c]||'') + ' ' + (catLabels[c]||c) + ' (' + ev.length + ')</h2><div class="tl">' + ev.map(makeCard).join('') + '</div>';
+  }).join('');
+
+  var css = 'body{font-family:Arial,sans-serif;color:#1a1000;background:#fff;margin:0;padding:20px;font-size:12px}'
+    + '.hdr{background:#c8a84b;color:#1a1000;padding:18px 24px;border-radius:10px;margin-bottom:14px}'
+    + '.hdr h1{margin:0 0 2px;font-size:20px;font-weight:700}.hdr p{margin:0;font-size:11px;opacity:.8}'
+    + '.meta{display:flex;justify-content:space-between;margin-top:6px;font-size:10px}'
+    + '.sts{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}'
+    + '.st{background:#f9f4e8;border:1px solid #e0c870;border-radius:6px;padding:7px 10px;text-align:center;flex:1;min-width:70px}'
+    + '.sv{font-size:16px;font-weight:700;color:#c8a84b}.sl{font-size:9px;color:#6b5020;text-transform:uppercase}'
+    + 'h2{font-size:13px;color:#6b5020;border-bottom:1px solid #e8d890;padding-bottom:3px;margin:14px 0 8px}'
+    + '.tl{position:relative;padding-left:22px;margin-bottom:6px}'
+    + '.tl::before{content:"";position:absolute;left:7px;top:0;bottom:0;width:2px;background:#e8d890}'
+    + '.event{position:relative;margin-bottom:9px}'
+    + '.event::before{content:"";position:absolute;left:-18px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--c,#c8a84b);border:2px solid #fff;box-shadow:0 0 0 1px var(--c,#c8a84b)}'
+    + '.ed{font-size:10px;color:#8a7040;font-weight:600;margin-bottom:1px}'
+    + '.eh{display:flex;align-items:center;gap:5px;font-size:12px;color:#2a1a00}'
+    + '.edl{font-size:11px;color:#6b5020;margin-top:2px;margin-left:18px}'
+    + '.ec{background:#fdfaf0;border:1px solid #e8d890;border-radius:5px;padding:7px 9px}'
+    + '.swb{display:flex;gap:8px;margin-bottom:12px;align-items:center}'
+    + '.sb{padding:5px 13px;border-radius:20px;border:1px solid #c8a84b;font-size:11px;cursor:pointer;background:#fff;color:#6b5020;font-weight:600}'
+    + '.sb.on{background:#c8a84b;color:#1a1000}'
+    + '@media print{.swb{display:none}body{padding:0}}';
+
+  var statsHtml = '<div class="sts">'
+    + '<div class="st"><div class="sv">' + events.filter(function(e){return e.cat==='pesee';}).length + '</div><div class="sl">Pesées</div></div>'
+    + '<div class="st"><div class="sv">' + events.filter(function(e){return e.cat==='nourrir';}).length + '</div><div class="sl">Nourr.</div></div>'
+    + '<div class="st"><div class="sv">' + events.filter(function(e){return e.cat==='soigner';}).length + '</div><div class="sl">Trait.</div></div>'
+    + '<div class="st"><div class="sv">' + events.filter(function(e){return e.cat==='action';}).length + '</div><div class="sl">Actions</div></div>'
+    + '<div class="st"><div class="sv">' + events.filter(function(e){return e.cat==='hausse';}).length + '</div><div class="sl">Hausses</div></div>'
+    + '</div>';
+
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Journal ' + ruche.nom + '</title>'
+    + '<style>' + css + '</style></head><body>'
+    + '<div class="hdr"><h1>' + ruche.id + ' — ' + ruche.nom + '</h1>'
+    + '<p>Journal de ruche' + (colCourante?' &middot; Colonie&nbsp;: '+colCourante.nom:'') + '</p>'
+    + '<div class="meta"><span>P&eacute;riode&nbsp;: ' + fmtDate(debut) + ' &rarr; ' + fmtDate(fin) + '</span><span>G&eacute;n&eacute;r&eacute; le ' + fmtDate(todayISO()) + '</span></div></div>'
+    + (apiculteur ? '<div style="background:#f9f4e8;border:1px solid #e0c870;border-radius:8px;padding:7px 12px;margin-bottom:12px;font-size:11px"><strong>' + apiculteur + '</strong>' + (api.napi?' &middot; NAPI&nbsp;: '+api.napi:'') + '</div>' : '')
+    + statsHtml
+    + '<div class="swb">'
+    + '<button class="sb on" id="bd" onclick="sv(\'d\')">&#128197; Par date</button>'
+    + '<button class="sb" id="bt" onclick="sv(\'t\')">&#128193; Par type</button>'
+    + '<button style="margin-left:auto;padding:5px 13px;border-radius:20px;border:1px solid #c8a84b;background:#c8a84b;color:#1a1000;font-size:11px;font-weight:700;cursor:pointer" onclick="window.print()">&#128438; PDF</button>'
+    + '</div>'
+    + '<div id="vd"><h2>📅 Chronologie</h2><div class="tl">' + rowsDate + '</div></div>'
+    + '<div id="vt" style="display:none">' + rowsType + '</div>'
+    + '<script>function sv(v){document.getElementById("vd").style.display=v==="d"?"block":"none";document.getElementById("vt").style.display=v==="t"?"block":"none";document.getElementById("bd").className="sb"+(v==="d"?" on":"");document.getElementById("bt").className="sb"+(v==="t"?" on":"");}<\/script>'
+    + '</body></html>';
+
+  var w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 600);
 }
 
 function exportPoidsRuchePDF(rucheId) {
