@@ -836,7 +836,7 @@ select option { background: var(--bg2); color: var(--cream); }
 .reine-dot.Bleue  { background: #3a6ab0; }
 .reine-dot.Jaune  { background: #c8a83a; }
 .reine-dot.Rouge  { background: #a03030; }
-.reine-dot.Blanche{ background: #d0d0d0; }
+.reine-dot.Blanche{ background: #e8e8e8; border:1px solid #aaa; }
 
 .colonie-nom {
   font-family: 'DM Serif Display', serif;
@@ -1282,7 +1282,7 @@ select option { background: var(--bg2); color: var(--cream); }
   <div class="splash-title">Principauté<br>de Cordemais</div>
   <div class="splash-sep"></div>
   <div class="splash-sub">Gestion apicole</div>
-  <div class="splash-version">v3.3.2</div>
+  <div class="splash-version">v3.3.8</div>
   <div class="splash-dots" id="splash-dots">
     <div class="splash-dot"></div>
     <div class="splash-dot"></div>
@@ -1445,7 +1445,7 @@ select option { background: var(--bg2); color: var(--cream); }
       <span class="nav-icon" style="display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span class="nav-label">Réglages</span>
     </button>
-    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.3.2</div>
+    <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);opacity:.4;pointer-events:none;letter-spacing:.3px">v3.3.8</div>
   </nav>
 
 </div><!-- /app -->
@@ -1658,7 +1658,7 @@ select option { background: var(--bg2); color: var(--cream); }
 
 <script>
 
-const APP_VERSION = '3.3.2';
+const APP_VERSION = '3.3.8';
 
 // Splash screen — se ferme uniquement via le bouton CTA
 function hideSplash() {
@@ -6027,7 +6027,7 @@ function clearCache() {
 // ============================================================
 // COLONIES
 // ============================================================
-const REINE_COLORS = { Verte:'#3a8a3a', Bleue:'#3a6ab0', Jaune:'#e6db0c', Rouge:'#a03030', Blanche:'#777' };
+const REINE_COLORS = { Verte:'#3a8a3a', Bleue:'#3a6ab0', Jaune:'#e6db0c', Rouge:'#a03030', Blanche:'#e8e8e8' };
 
 function renderColonies() {
   const el = document.getElementById('content-colonies');
@@ -6080,6 +6080,11 @@ function renderColonieDetail(colonieId) {
   const occ = DB.occupation_courante.find(o => o.colonie_id === colonieId);
   const ruche = occ ? DB.ruches.find(r => r.id === occ.ruche_id) : null;
   const bg = REINE_COLORS[c.couleur_reine] || '#555';
+  // Texte sombre si fond clair (Blanche #e8e8e8 ou Jaune #e6db0c)
+  const bgLight = c.couleur_reine === 'Blanche' || c.couleur_reine === 'Jaune';
+  const textCol = bgLight ? '#1a1a0e' : 'white';
+  const textDim  = bgLight ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.7)';
+  const textFaint = bgLight ? 'rgba(0,0,0,.4)' : 'rgba(255,255,255,.55)';
 
   const traitements = DB.traitements.filter(t => t.colonie_id === colonieId)
     .sort((a,b) => new Date(b.semaine) - new Date(a.semaine)).slice(0, 5);
@@ -6095,12 +6100,12 @@ function renderColonieDetail(colonieId) {
   el.innerHTML = `
     <!-- Bandeau colonie -->
     <div style="background:${bg};padding:24px 16px 20px;position:relative">
-      <div style="font-family:'DM Serif Display',serif;font-size:28px;font-weight:700;color:white">${c.nom || '—'}</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px">${c.genetique || '—'}</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:28px;font-weight:700;color:${textCol}">${c.nom || '—'}</div>
+      <div style="font-size:12px;color:${textDim};margin-top:4px">${c.genetique || '—'}</div>
       <div style="position:absolute;top:16px;right:16px;display:flex;gap:8px;align-items:center">
-        ${c.marquee ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.25);" title="Reine marquée"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9.5 10,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ''}
+        ${c.marquee ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.25);" title="Reine marquée"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9.5 10,3" stroke="${bgLight ? '#1a1a0e' : 'white'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ''}
       </div>
-      ${c.date_creation ? `<div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,.55)">Créée le ${fmtDate(c.date_creation)}</div>` : ''}
+      ${c.date_creation ? `<div style="margin-top:8px;font-size:11px;color:${textFaint}">Créée le ${fmtDate(c.date_creation)}</div>` : ''}
       ${!colonieActive(c) ? `<div style="margin-top:4px;font-size:11px;color:rgba(255,100,100,.8)">☠️ Terminée le ${fmtDate(c.date_fin)}</div>` : ''}
     </div>
 
@@ -6131,6 +6136,14 @@ function renderColonieDetail(colonieId) {
               <button class="btn btn-primary" style="font-size:12px;padding:7px 12px;white-space:nowrap" onclick="changerRuche('${c.id}')">Déplacer</button>
             </div>
           </div>` : ''}
+          <div class="historique-item" style="cursor:pointer" onclick="editCouleurReine('${c.id}')" title="Modifier la couleur">
+            <div class="historique-label">Couleur reine</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${c.couleur_reine
+                ? `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${REINE_COLORS[c.couleur_reine]||'#555'};box-shadow:0 0 0 2px rgba(255,255,255,.15)"></span><span style="font-size:13px;color:var(--text-main)">${c.couleur_reine}${c.marquee ? ' ✓' : ''}</span>`
+                : `<span style="font-size:12px;color:var(--text-muted)">Non définie</span>`}
+            </div>
+          </div>
           <div class="historique-item">
             <div class="historique-label">Gentillesse</div>
             <div style="display:flex;align-items:center;gap:5px" id="gent-stars-${c.id}">
@@ -6237,6 +6250,135 @@ function renderColonieDetail(colonieId) {
 
     <div style="height:16px"></div>
   `;
+}
+
+function editCouleurReine(colonieId) {
+  const c = DB.colonies.find(x => x.id === colonieId);
+  if (!c) return;
+  const couleurs = Object.keys(REINE_COLORS);
+
+  let dlg = document.getElementById('reine-edit-dialog');
+  if (dlg) dlg.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'reine-edit-dialog';
+  Object.assign(overlay.style, {position:'fixed',inset:'0',background:'rgba(0,0,0,.7)',zIndex:'10002',
+    display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'});
+
+  const box = document.createElement('div');
+  Object.assign(box.style, {background:'#1a1a12',border:'2px solid #c8a84b',borderRadius:'14px',
+    padding:'20px 18px',width:'100%',maxWidth:'340px'});
+
+  const titre = document.createElement('div');
+  titre.style.cssText = 'font-family:DM Serif Display,serif;font-size:16px;color:#c8a84b;margin-bottom:4px';
+  titre.textContent = 'Reine — ' + (c.nom || colonieId);
+  box.appendChild(titre);
+
+  // Couleur reine
+  const lblCol = document.createElement('div');
+  lblCol.style.cssText = 'font-size:10px;color:#9a9070;margin:12px 0 6px;text-transform:uppercase;letter-spacing:.4px';
+  lblCol.textContent = 'Couleur de la reine';
+  box.appendChild(lblCol);
+
+  const colGrid = document.createElement('div');
+  colGrid.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px';
+  let selectedCouleur = c.couleur_reine || '';
+  couleurs.forEach(function(col) {
+    const btn = document.createElement('button');
+    const hex = REINE_COLORS[col];
+    btn.dataset.col = col;
+    const textCol = (col === 'Blanche' || col === 'Jaune') ? '#1a1000' : '#fff';
+    btn.style.cssText = 'padding:6px 12px;border-radius:20px;border:2px solid ' +
+      (col === selectedCouleur ? (col === 'Blanche' ? '#888' : '#fff') : 'transparent') +
+      ';background:' + hex + ';color:' + textCol + ';font-size:12px;font-weight:600;cursor:pointer;text-shadow:none';
+    btn.textContent = col;
+    btn.onclick = function() {
+      selectedCouleur = col;
+      colGrid.querySelectorAll('button').forEach(function(b) {
+        const isSelected = b.dataset.col === col;
+        const borderColor = isSelected ? (col === 'Blanche' ? '#888' : '#fff') : 'transparent';
+        b.style.border = '2px solid ' + borderColor;
+      });
+    };
+    colGrid.appendChild(btn);
+  });
+  // Bouton "Aucune"
+  const btnAucune = document.createElement('button');
+  btnAucune.dataset.col = '';
+  btnAucune.style.cssText = 'padding:6px 12px;border-radius:20px;border:2px solid ' +
+    (!selectedCouleur ? '#c8a84b' : '#3a3a2a') +
+    ';background:#2a2a1a;color:#9a9070;font-size:12px;cursor:pointer';
+  btnAucune.textContent = 'Aucune';
+  btnAucune.onclick = function() {
+    selectedCouleur = '';
+    colGrid.querySelectorAll('button').forEach(function(b) {
+      b.style.border = '2px solid ' + (!b.dataset.col ? '#c8a84b' : 'transparent');
+      if (REINE_COLORS[b.dataset.col]) b.style.border = '2px solid transparent';
+    });
+    btnAucune.style.border = '2px solid #c8a84b';
+  };
+  colGrid.appendChild(btnAucune);
+  box.appendChild(colGrid);
+
+  // Marquée ? — switch toggle (pas de checkbox native)
+  let marqueeOn = !!c.marquee;
+  const switchRow = document.createElement('div');
+  switchRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 12px;border-radius:8px;border:1px solid #3a3a2a;background:#0e0e08;cursor:pointer;user-select:none';
+  const switchLbl = document.createElement('span');
+  switchLbl.style.cssText = 'font-size:13px;color:#e8e0c8';
+  switchLbl.textContent = 'Reine marquée';
+  const switchTrack = document.createElement('div');
+  switchTrack.style.cssText = 'position:relative;width:44px;height:24px;border-radius:12px;transition:background .2s;flex-shrink:0;background:' + (marqueeOn ? '#c8a84b' : '#3a3a2a');
+  const switchThumb = document.createElement('div');
+  switchThumb.style.cssText = 'position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;left:' + (marqueeOn ? '23px' : '3px');
+  switchTrack.appendChild(switchThumb);
+  switchRow.appendChild(switchLbl);
+  switchRow.appendChild(switchTrack);
+  switchRow.addEventListener('click', function(e) {
+    e.stopPropagation();
+    marqueeOn = !marqueeOn;
+    switchTrack.style.background = marqueeOn ? '#c8a84b' : '#3a3a2a';
+    switchThumb.style.left = marqueeOn ? '23px' : '3px';
+  });
+  box.appendChild(switchRow);
+  // alias pour la lecture dans btnSave
+  const chk = { get checked() { return marqueeOn; } };
+
+  // Boutons
+  const btns = document.createElement('div');
+  btns.style.cssText = 'display:flex;gap:8px;margin-top:4px';
+  const btnCancel = document.createElement('button');
+  btnCancel.textContent = 'Annuler';
+  btnCancel.style.cssText = 'flex:1;padding:9px;border-radius:8px;border:1px solid #3a3a2a;background:transparent;color:#9a9070;font-size:13px;cursor:pointer';
+  btnCancel.onclick = function() { overlay.remove(); };
+  const btnSave = document.createElement('button');
+  btnSave.textContent = 'Enregistrer';
+  btnSave.style.cssText = 'flex:2;padding:9px;border-radius:8px;border:none;background:#c8a84b;color:#0a0a06;font-size:13px;font-weight:700;cursor:pointer';
+  btnSave.onclick = async function() {
+    const cfg = getConfig();
+    if (!cfg.url || !cfg.key) { toast('Configurez Supabase', 'err'); return; }
+    const couleur_reine = selectedCouleur || null;
+    const marquee = chk.checked;
+    try {
+      const r = await fetch(cfg.url + '/rest/v1/colonies?id=eq.' + colonieId, {
+        method: 'PATCH',
+        headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key,
+          'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ couleur_reine, marquee })
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const idx = DB.colonies.findIndex(x => x.id === colonieId);
+      if (idx !== -1) { DB.colonies[idx].couleur_reine = couleur_reine; DB.colonies[idx].marquee = marquee; }
+      saveCache();
+      addLog('UPDATE', 'colonies', (couleur_reine || 'Aucune') + ' · ' + (marquee ? 'marquée' : 'non marquée'));
+      toast('Reine mise à jour ✓', 'ok');
+      overlay.remove();
+      renderColonieDetail(colonieId);
+    } catch(e) { toast('Erreur : ' + e.message, 'err'); }
+  };
+  btns.appendChild(btnCancel); btns.appendChild(btnSave);
+  box.appendChild(btns);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
 }
 
 async function cloturerColonie(colonieId) {
