@@ -7,6 +7,9 @@
 
 const SUPABASE_URL   = process.env.SUPABASE_URL;
 const SUPABASE_KEY   = process.env.SUPABASE_KEY;
+// Schéma des données ApiRuche sur le serveur KGB (inutile sur Supabase cloud)
+const SUPABASE_SCHEMA = process.env.SUPABASE_SCHEMA
+  || (SUPABASE_URL && !SUPABASE_URL.includes('.supabase.co') ? 'happyruches' : '');
 const WA_PHONE       = process.env.WA_PHONE;
 const WA_APIKEY      = process.env.WA_APIKEY;
 
@@ -18,7 +21,11 @@ if (!SUPABASE_URL || !SUPABASE_KEY || !WA_PHONE || !WA_APIKEY) {
 // Fetch Supabase
 async function sb(table, params = '') {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      ...(SUPABASE_SCHEMA ? { 'Accept-Profile': SUPABASE_SCHEMA } : {})
+    }
   });
   if (!r.ok) throw new Error(`Supabase ${table}: ${r.status} ${await r.text()}`);
   return r.json();
